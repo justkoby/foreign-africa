@@ -70,7 +70,7 @@ Checked again against Hostinger’s Node.js documentation on 25 October 2026. Bu
 | Website | A new website for `preview.foreignafrica.org` only. Do not convert or remove the apex WordPress site |
 | Application type | Express |
 | Node.js | 22. `package.json` sets `"engines": { "node": "22" }` |
-| Entry file | `server/index.js` |
+| Entry file | `server/index.js`. LiteSpeed loads this file with `require()`, so it cannot use top-level await |
 | Build command | `npm run build` |
 | Output directory | Leave empty. Express serves `dist/` itself. Putting `dist` here would hide the server |
 | Start | `npm start`, which runs `node server/index.js` and listens on `process.env.PORT` |
