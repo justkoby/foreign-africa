@@ -1,6 +1,7 @@
 import express from 'express';
-import {existsSync} from 'node:fs';
+import {existsSync, readFileSync} from 'node:fs';
 import {access, constants} from 'node:fs/promises';
+import {join, resolve} from 'node:path';
 import {allows} from './permissions.js';
 import {externalRedirect, renderContentPage, robotsText, sitemapXml} from './html.js';
 import {readCookie, sameSecret, originAllowed, sqlTime} from './text.js';
@@ -33,14 +34,38 @@ async function storageCheck(config) {
   }
 }
 
+function acmeChallenge(token) {
+  if (!/^[A-Za-z0-9_-]{8,}$/.test(token)) return '';
+  const roots = [];
+  let dir = process.cwd();
+  for (let i = 0; i < 6; i += 1) {
+    roots.push(dir, join(dir, 'public_html'));
+    const parent = resolve(dir, '..');
+    if (parent === dir) break;
+    dir = parent;
+  }
+  for (const root of roots) {
+    const file = join(root, '.well-known', 'acme-challenge', token);
+    if (existsSync(file)) return readFileSync(file);
+  }
+  return '';
+}
+
 export function createApp({config, pool, clock = () => Date.now()}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
   app.use(express.json({limit: '1mb'}));
 
+  app.get('/.well-known/acme-challenge/:token', (req, res) => {
+    const body = acmeChallenge(req.params.token);
+    if (!body) return send(res, 404, {error: 'Not found.'});
+    res.type('text/plain').send(body);
+  });
+
   app.use((req, res, next) => {
     if (config.appEnv !== 'staging') return next();
+    if (req.path.startsWith('/.well-known/acme-challenge/')) return next();
     if (!config.stagingUser || !config.stagingPassword) return send(res, 503, {error: 'Staging access is not configured.'});
     const header = String(req.headers.authorization || '');
     const encoded = header.startsWith('Basic ') ? header.slice(6) : '';

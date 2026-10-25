@@ -40,6 +40,7 @@ test('staging serves one origin, locks visitors out, and keeps uploads off', asy
   const {server, url} = await listen(site);
   try {
     assert.equal((await fetch(`${url}/admin`)).status, 401);
+    assert.equal((await fetch(`${url}/.well-known/acme-challenge/previewtoken`)).status, 404);
     assert.equal((await fetch(`${url}/editor/`)).status, 401);
     const home = await fetch(`${url}/`, {headers: auth});
     assert.equal(home.status, 200);
