@@ -1,0 +1,69 @@
+.cms{min-height:100vh;background:#f0f0f1;color:#1d2327;font-family:'DM Sans',sans-serif}
+.cms button,.cms input,.cms textarea,.cms select{font:inherit}
+.cms-primary{background:#143e69;color:white;border:0;min-height:40px;padding:0 16px;cursor:pointer}
+.cms-login{min-height:100vh;display:grid;align-content:center;justify-items:center;gap:22px;padding:36px 20px;background:#e7e7e7;color:#111}
+.cms-login-wait{color:#50575e}
+.cms-login-chip{display:flex;align-items:center;gap:8px;margin:0;padding:6px 16px 6px 6px;background:white;border-radius:999px;box-shadow:0 8px 24px #00000014;font-size:14px}
+.cms-login-chip img,.cms-login-brand img{width:28px;height:22px;object-fit:contain}
+.cms-login-frame{display:grid;grid-template-columns:minmax(280px,1.05fr) minmax(280px,.95fr);width:min(980px,100%);background:white;border-radius:36px;padding:16px;box-shadow:0 24px 60px #00000014}
+.cms-login-art{position:relative;min-height:520px;border-radius:28px;overflow:hidden;background:linear-gradient(180deg,#f3f4f6,#e6e8ec)}
+.orb,.bloom{position:absolute;display:block}
+.orb-stripe{width:250px;height:250px;left:-30px;top:-20px;border-radius:50%;background:repeating-linear-gradient(115deg,#f6d36a 0 16px,#fff 16px 28px);box-shadow:inset -30px -24px 40px #c9922e55,12px 18px 30px #00000018}
+.orb-blue{width:210px;height:210px;right:28px;top:70px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#9ec0ff,#3d6fd8 55%,#214e9a);box-shadow:16px 20px 30px #0000001a}
+.orb-gold{width:130px;height:170px;left:36px;bottom:28px;border-radius:70px;background:radial-gradient(circle at 30% 25%,#ffe08a,#e2b34a 45%,#b8862d);transform:rotate(-18deg);box-shadow:10px 16px 24px #00000018}
+.orb-clear{width:120px;height:120px;right:70px;bottom:90px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#ffffffd0,#d5dbe6 40%,#ffffff40 70%);border:1px solid #ffffffaa;box-shadow:inset -10px -12px 20px #9aa4b455}
+.orb-block{width:92px;height:92px;right:48px;bottom:24px;border-radius:18px;background:linear-gradient(160deg,#4f78d8,#1d4e89);transform:rotate(18deg);box-shadow:8px 12px 20px #00000018}
+.bloom{width:230px;height:230px;left:28%;top:30%;border-radius:50%;background:radial-gradient(circle at 50% 45%,#9aa7ff 0 18%,transparent 19%),repeating-conic-gradient(from 0deg,#c9b6ff 0 12deg,#8d78e8 12deg 24deg);box-shadow:0 18px 30px #6d5bd433}
+.cms-login form{display:grid;align-content:center;gap:8px;padding:42px 48px}
+.cms-login-brand{display:flex;align-items:center;justify-content:center;gap:8px;font-weight:650;margin-bottom:18px}
+.cms-login h1{margin:0;text-align:center;font-family:'Mark Pro','DM Sans',sans-serif;font-size:36px;letter-spacing:-.04em;color:#111}
+.cms-login form>p{margin:0 0 28px;text-align:center;color:#9aa0a6;font-size:14px}
+.cms-login label{display:grid;gap:8px;color:#8b9096;font-size:13px;margin-top:18px}
+.cms-login label span{display:flex;align-items:center;border-bottom:1px solid #d7d7d7}
+.cms-login input{width:100%;border:0;background:transparent;min-height:42px;padding:0;color:#111;font-size:15px;outline:none}
+.cms-login label button{display:grid;place-items:center;width:36px;height:36px;border:0;background:transparent;color:#8b9096;cursor:pointer}
+.cms-login-submit{margin-top:28px;height:52px;border:0;border-radius:999px;background:#111;color:white;font-size:15px;cursor:pointer}
+.cms-login-submit:hover{background:#2a2a2a}
+.cms-login-note{margin:18px 0 0;text-align:center;color:#9aa0a6;font-size:13px}
+.cms-login .cms-error{margin-top:12px}
+@media(max-width:800px){
+.cms-login-frame{grid-template-columns:1fr}
+.cms-login-art{min-height:250px}
+.cms-login form{padding:28px 22px 32px}
+.orb-stripe{width:150px;height:150px;left:-18px;top:-24px}
+.orb-blue{width:120px;height:120px;right:18px;top:18px}
+.orb-gold{width:78px;height:100px;left:22px;bottom:10px}
+.orb-clear{width:72px;height:72px;right:36px;bottom:28px}
+.bloom{width:132px;height:132px;left:24%;top:22%}
+.orb-block{width:52px;height:52px;right:22px;bottom:14px}
+}
+.cms-shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+.cms-side{background:#1d2327;color:#f0f0f1;padding:22px 0;display:flex;flex-direction:column;gap:4px}
+.cms-side strong{display:block;padding:0 18px 16px;font-family:'Mark Pro','DM Sans',sans-serif}
+.cms-side a,.cms-side button{color:#f0f0f1;background:none;border:0;text-align:left;padding:10px 18px;text-decoration:none;cursor:pointer}
+.cms-side a[aria-current=page],.cms-side a:hover{background:#143e69}
+.cms-side .cms-out{margin-top:auto;color:#be943d}
+.cms-main{padding:28px}
+.cms-bar{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:22px}
+.cms-bar h1{font-family:'Mark Pro','DM Sans',sans-serif;font-size:28px}
+.cms-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.cms-cards a{background:white;padding:18px;text-decoration:none;color:inherit;border-top:3px solid #be943d}
+.cms-cards strong{display:block;font-size:28px;color:#143e69}
+.cms-note{margin-top:22px;background:white;padding:16px;font-size:14px;line-height:1.6}
+.cms-table{width:100%;border-collapse:collapse;background:white}
+.cms-table th,.cms-table td{text-align:left;padding:12px;border-bottom:1px solid #dcdcde;vertical-align:top}
+.cms-table a{color:#143e69}
+.cms-status{font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.cms-editor{display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start}
+.cms-panel{background:white;padding:18px;display:grid;gap:12px}
+.cms-field{display:grid;gap:6px;font-size:13px}
+.cms-field input,.cms-field textarea,.cms-field select{width:100%;border:1px solid #8c8f94;padding:8px;min-height:40px}
+.cms-field textarea{min-height:90px}
+.cms-title{font-size:22px;min-height:52px}
+.cms-block{border:1px solid #dcdcde;padding:10px;display:grid;gap:8px}
+.cms-actions{display:flex;gap:8px;flex-wrap:wrap}
+.cms-quiet{background:white;border:1px solid #143e69;color:#143e69;min-height:40px;padding:0 12px;cursor:pointer}
+.cms-error{background:#fcf0f1;color:#8a2424;padding:10px}
+.cms-ok{background:#edfaef;color:#1e4620;padding:10px}
+.cms-search{min-height:40px;border:1px solid #8c8f94;padding:8px 12px;min-width:220px}
+@media(max-width:900px){.cms-shell{grid-template-columns:1fr}.cms-side{flex-direction:row;overflow:auto;padding:8px}.cms-side strong,.cms-side .cms-out{display:none}.cms-cards,.cms-editor{grid-template-columns:1fr}.cms-main{padding:16px}}

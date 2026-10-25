@@ -1,0 +1,69 @@
+[
+  {
+    "id": "cohort-completion-2026",
+    "title": "2026 cohort completion ceremony",
+    "category": "Community",
+    "date": "2026-10-23",
+    "timeLabel": "10:30 · time zone not supplied",
+    "format": "Online",
+    "venue": "Microsoft Teams",
+    "summary": "An announcement recognising the work and achievements of Foreign Africa’s 2026 cohort, with Prof. Debrenna Agbényiga listed as guest speaker.",
+    "details": [
+      "The announcement invited the community to recognise the achievements and work of Foreign Africa’s associates.",
+      "Prof. Debrenna Agbényiga, Chairperson of the Advisory Council, was listed as guest speaker."
+    ],
+    "image": "/images/activities/cohort-original.png",
+    "imageFit": "contain",
+    "sourceLabel": "Supplied Foreign Africa ceremony announcement",
+    "storyUrl": "/?story=cohort-completion",
+    "sourceUrl": null,
+    "formId": null,
+    "registrationState": "unavailable"
+  },
+  {
+    "id": "edws-beyond-the-logo",
+    "title": "Beyond the Logo: Building Brands Investors and Governments Trust",
+    "category": "Workshop",
+    "date": "2026-10-09",
+    "startAt": "2026-10-09T15:00:00Z",
+    "endAt": "2026-10-09T16:30:00Z",
+    "timeLabel": "15:00–16:30 GMT",
+    "format": "Online",
+    "venue": "Microsoft Teams",
+    "summary": "The EDWS Session 4 announcement outlined brand credibility, investor confidence and institutional trust.",
+    "details": [
+      "The announcement named Dr. Temitope Falade as speaker and Hildana Mesai as facilitator.",
+      "Topics included executive communications, reputation, brand governance, digital engagement and stakeholder trust."
+    ],
+    "image": "/images/activities/edws-four-original.png",
+    "imageFit": "contain",
+    "sourceLabel": "Supplied EDWS Session 4 announcement",
+    "storyUrl": "/?story=beyond-the-logo",
+    "sourceUrl": null,
+    "formId": null,
+    "registrationState": "unavailable"
+  },
+  {
+    "id": "edws-funding-your-startup",
+    "title": "Funding Your Startup — Grants, Debt, Equity & Beyond",
+    "category": "Workshop",
+    "date": "2026-06-26",
+    "startAt": "2026-06-26T15:00:00Z",
+    "endAt": "2026-06-26T16:30:00Z",
+    "timeLabel": "15:00–16:30 GMT",
+    "format": "Online",
+    "venue": "Microsoft Teams",
+    "summary": "The EDWS Session 2 announcement introduced funding options, startup readiness and funder expectations for early-stage businesses.",
+    "details": [
+      "The published session overview named Audrey Simbiso Chidawanyika as session lead and Abdul-Razak Musah as facilitator.",
+      "The announced format combined a presentation, practical funding exercise and live questions.",
+      "Topics included grants, debt, equity, funding readiness and matching finance to a business’s stage and needs."
+    ],
+    "image": "/images/events/funding-startup.webp",
+    "imageFit": "contain",
+    "sourceLabel": "Published Foreign Africa Events page",
+    "sourceUrl": "https://foreignafrica.org/events/",
+    "formId": null,
+    "registrationState": "unavailable"
+  }
+]

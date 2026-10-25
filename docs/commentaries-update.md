@@ -7,12 +7,12 @@ Original titles, publication dates, article destinations and actual bylines in t
 
 The twelve original featured images are downloaded from their published WordPress media URLs, resized within 1400×1000, converted to WebP and served locally. Their source URLs are retained per record. Source photographs were not AI-generated or retouched. CSS crops thumbnails for layout; images are decorative within titled links.
 
-This update redesigns the listing page. Full article bodies continue to open at their existing absolute `foreignafrica.org` URLs. A full cutover from WordPress must preserve those routes or migrate the bodies before replacing the domain’s routing. The React archive does not implement article-detail pages, live WordPress synchronization, a CMS editor, comments or subscriptions.
+The listing and all twelve full article bodies now use local routes at their original slugs. `/blog/<slug>/` aliases also resolve. Body JSON and all 46 inline images are served locally. Editorial text, emphasis, links and images are retained; a copied Substack subscription widget is removed. The reader uses safe structured nodes, not injected WordPress HTML. There is no live WordPress synchronization, CMS editor, comment system or subscription backend.
 
 ## Browsing
 The latest publication is featured when the visitor first arrives. Six additional cards appear initially; More commentaries reveals the remaining five. Keyword, topic and year filters plus oldest/newest sorting operate over all twelve items. The featured card is folded back into filtered results, so there are no duplicate cards or missing matches. Counts report the actual displayed and matching articles. Empty states and reset controls are included. Loading more moves keyboard focus to the first newly revealed card.
 
-`/commentaries/` and `/category/blog/` are aliases. Homepage and mega menu commentary destinations now use `/blog/`. Smart Discovery indexes the source article destinations. Filtering and searching use bundled metadata and send no questions or keystrokes to an AI provider.
+`/commentaries/` and `/category/blog/` are aliases. Homepage and mega menu commentary destinations now use `/blog/`. Smart Discovery indexes the local article destinations. Filtering and searching use bundled metadata and send no questions or keystrokes to an AI provider.
 
 ## Files
 - `src/pages/CommentariesPage.jsx`: archive presentation and controls.

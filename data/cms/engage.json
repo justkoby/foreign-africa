@@ -1,0 +1,189 @@
+{
+  "engageServices": [
+    {
+      "id": "partnership",
+      "path": "/partner-with-us/",
+      "title": "Partner with us",
+      "heading": [
+        "Shared ambition.",
+        "Practical collaboration."
+      ],
+      "icon": "partnership",
+      "label": "PARTNERSHIPS",
+      "summary": "Connect your institution’s expertise with Foreign Africa’s work across policy, enterprise and diplomacy.",
+      "body": "We work with governments, diplomatic missions, universities, businesses, development organisations, foundations and civil society to co-design research, develop programmes and convene strategic dialogue.",
+      "focus": [
+        {
+          "title": "Research & knowledge",
+          "text": "Co-design research and bring institutional perspectives into public dialogue."
+        },
+        {
+          "title": "Programme collaboration",
+          "text": "Explore joint work around enterprise development, regional integration and policy innovation."
+        },
+        {
+          "title": "Institutional connections",
+          "text": "Connect people and organisations across sectors and borders."
+        }
+      ],
+      "brief": [
+        "Your organisation and area of work",
+        "The shared priority or challenge",
+        "What a collaboration could involve",
+        "Your proposed timing and contact person"
+      ],
+      "cta": "Discuss a partnership",
+      "related": {
+        "label": "Meet our partners",
+        "href": "/partners/"
+      },
+      "sourceUrl": "https://foreignafrica.org/partner-with-us/",
+      "formId": null,
+      "actionMode": "email-draft"
+    },
+    {
+      "id": "sponsorship",
+      "path": "/sponsor-a-programme/",
+      "title": "Sponsor a programme",
+      "heading": [
+        "Support the work.",
+        "Expand the possibilities."
+      ],
+      "icon": "sponsorship",
+      "label": "PROGRAMME SUPPORT",
+      "summary": "Explore support for practical learning, research and public engagement across Foreign Africa’s initiatives.",
+      "body": "Sponsorship can support the Enterprise Development Workshop Series, SkillShare@ForeignAfrica, the Remote Internship Programme, Foreign Africa Enterprise Week, research projects and public engagement programmes.",
+      "focus": [
+        {
+          "title": "Enterprise & learning",
+          "text": "Support initiatives connecting entrepreneurs with practical knowledge and learning."
+        },
+        {
+          "title": "People & participation",
+          "text": "Explore ways to support youth participation and programme access."
+        },
+        {
+          "title": "Research & dialogue",
+          "text": "Discuss support for research and public engagement around Africa’s development."
+        }
+      ],
+      "brief": [
+        "The programme or theme that interests you",
+        "Your organisation and proposed type of support",
+        "The objectives you would like to discuss",
+        "Your timing and main contact"
+      ],
+      "cta": "Discuss programme support",
+      "related": {
+        "label": "Explore Enterprise Week",
+        "href": "/foreign-africa-enterprise-week-few-2/"
+      },
+      "sourceUrl": "https://foreignafrica.org/sponsor-a-programme/",
+      "formId": null,
+      "actionMode": "email-draft"
+    },
+    {
+      "id": "speaker",
+      "path": "/book-a-speaker/",
+      "title": "Book a speaker",
+      "heading": [
+        "Bring expertise.",
+        "Open the conversation."
+      ],
+      "icon": "speaker",
+      "label": "SPEAKING & DIALOGUE",
+      "summary": "Bring research, policy and practical enterprise perspectives to your audience.",
+      "body": "Foreign Africa’s researchers, policy experts, entrepreneurs and practitioners contribute to conferences, workshops, executive forums, universities, corporate events and public dialogues.",
+      "focus": [
+        {
+          "title": "Enterprise & employment",
+          "text": "Entrepreneurship, enterprise development, youth employment and economic transformation."
+        },
+        {
+          "title": "Policy & diplomacy",
+          "text": "Foreign policy, municipal diplomacy and Africa’s international engagement."
+        },
+        {
+          "title": "Regional integration",
+          "text": "Perspectives on cooperation, connection and continental economic priorities."
+        }
+      ],
+      "brief": [
+        "Your event, organisation and audience",
+        "The topic and preferred session format",
+        "Proposed dates and time zone",
+        "The venue or online arrangements"
+      ],
+      "cta": "Request a speaker",
+      "related": {
+        "label": "Meet our people",
+        "href": "/our-people/"
+      },
+      "sourceUrl": "https://foreignafrica.org/book-a-speaker/",
+      "formId": null,
+      "actionMode": "email-draft"
+    }
+  ],
+  "engageTopics": [
+    {
+      "id": "general",
+      "label": "General enquiry",
+      "subject": "General enquiry — Foreign Africa"
+    },
+    {
+      "id": "partnership",
+      "label": "Partnership proposal",
+      "subject": "Partnership enquiry — Foreign Africa"
+    },
+    {
+      "id": "sponsorship",
+      "label": "Programme sponsorship",
+      "subject": "Programme sponsorship enquiry — Foreign Africa"
+    },
+    {
+      "id": "speaker",
+      "label": "Speaker request",
+      "subject": "Speaker request — Foreign Africa"
+    },
+    {
+      "id": "careers",
+      "label": "Careers enquiry",
+      "subject": "Careers enquiry — Foreign Africa"
+    }
+  ],
+  "contactDepartments": [
+    {
+      "title": "General enquiries",
+      "description": "Programme ideas, questions and a starting point for your enquiry.",
+      "emails": [
+        "info@foreignafrica.org"
+      ]
+    },
+    {
+      "title": "Institutional & Strategic Engagement",
+      "description": "Institutional proposals and strategic engagement.",
+      "emails": [
+        "founder@foreignafricalgb.onmicrosoft.com"
+      ]
+    },
+    {
+      "title": "Partnerships & Operations",
+      "description": "Partnership coordination and operational enquiries.",
+      "emails": [
+        "operations@foreignafrica.lgb.onmicrosoft.com",
+        "abla@foreignafrica.lgb.onmicrosoft.com"
+      ]
+    }
+  ],
+  "archivedVacancies": [
+    {
+      "id": "institutional-partnerships-officer",
+      "title": "Institutional Partnerships Officer (IPO)",
+      "type": "Full time",
+      "location": "Anywhere",
+      "status": "expired",
+      "sourceUrl": "https://foreignafrica.org/?post_type=job_listing&p=7310",
+      "verifiedOn": "2026-10-25"
+    }
+  ]
+}

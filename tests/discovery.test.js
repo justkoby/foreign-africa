@@ -41,7 +41,7 @@ test('valid model answer cites only server-resolved URLs and uses protected cred
   const sent=JSON.parse(options.body);assert.ok(sent.systemInstruction.parts[0].text.includes('Never invent'));
   return {ok:true,json:async()=>({candidates:[{content:{parts:[{text:JSON.stringify({answer:'Explore the Remote Internship Programme. Check the programme page for current application details.',sourceIds:['fa-7']})}]}}]})};
  }});
- assert.equal(result.mode,'ai');assert.equal(result.answer.sources[0].url,'https://foreignafrica.org/remote-internship-programme-rip/');
+ assert.equal(result.mode,'ai');assert.equal(result.answer.sources[0].url,'/remote-internship-programme-rip/');
 });
 test('invalid citations and embedded links are rejected',()=>{
  const results=discover('internship').results;

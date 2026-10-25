@@ -6,7 +6,7 @@ export function createHandler({env=process.env,fetchImpl=fetch,clock=Date.now,li
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');
   if(req.method!=='POST'){res.setHeader('Allow','POST');return res.status(405).json({error:'Use POST.'})}
   const host=req.headers?.host;const origin=req.headers?.origin;
-  if(origin){try{if(new URL(origin).host!==host)return res.status(403).json({error:'Origin not allowed.'})}catch{return res.status(403).json({error:'Origin not allowed.'})}}
+  if(origin){let allowed=false;try{const originHost=new URL(origin).host;const siteHost=env.PUBLIC_SITE_URL?new URL(env.PUBLIC_SITE_URL).host:'';allowed=originHost===host||(siteHost&&originHost===siteHost)}catch{allowed=false}if(!allowed)return res.status(403).json({error:'Origin not allowed.'})}
   const size=Number(req.headers?.['content-length']??0);
   if(size>4096)return res.status(413).json({error:'Question is too long.'});
   let body=req.body;

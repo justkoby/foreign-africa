@@ -37,7 +37,7 @@ test('navigation and resource entries preserve all four pathways and internship 
     assert.ok(links.includes(item.path));
     assert.ok(resources.some(resource=>resource.type==='Opportunity'&&resource.url===item.path));
   }
-  assert.ok(links.includes('https://foreignafrica.org/remote-internship-programme-rip/'));
+  assert.ok(links.includes('/remote-internship-programme-rip/'));
 });
 
 test('discovery connects to opportunity overviews without asserting availability',()=>{

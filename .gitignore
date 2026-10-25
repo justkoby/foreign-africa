@@ -4,3 +4,5 @@ dist/
 .env.*
 !.env.example
 .DS_Store
+data/cms/submissions.json
+storage/
