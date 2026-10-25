@@ -56,7 +56,7 @@ export async function migrate({pool, directory}) {
 
 export const migrationsDirectory = join(dirname(fileURLToPath(import.meta.url)), '..', 'migrations');
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+async function migrateCli() {
   const config = readConfig();
   if (!databaseConfigured(config)) {
     console.error('Set DB_HOST, DB_USER, and DB_NAME before migrating.');
@@ -73,4 +73,11 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   } finally {
     await pool.end();
   }
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  migrateCli().catch(error => {
+    console.error(error.message);
+    process.exit(1);
+  });
 }

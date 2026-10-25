@@ -75,19 +75,29 @@ export async function seedCatalogue({pool, clock, actor, directory = root}) {
   return report;
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+async function seedCli() {
   const config = readConfig();
   if (!databaseConfigured(config)) {
     console.error('Set DB_HOST, DB_USER, and DB_NAME before seeding.');
     process.exit(1);
   }
   const pool = createPool(config);
-  const [users] = await pool.execute("SELECT users.id, users.email FROM users JOIN user_roles ON user_roles.user_id = users.id JOIN roles ON roles.id = user_roles.role_id WHERE roles.role_key = 'super_admin' AND users.deleted_at IS NULL ORDER BY users.id LIMIT 1");
-  if (!users[0]) {
-    console.error('Create the first administrator with npm run bootstrap-admin before seeding.');
-    process.exit(1);
+  try {
+    const [users] = await pool.execute("SELECT users.id, users.email FROM users JOIN user_roles ON user_roles.user_id = users.id JOIN roles ON roles.id = user_roles.role_id WHERE roles.role_key = 'super_admin' AND users.deleted_at IS NULL ORDER BY users.id LIMIT 1");
+    if (!users[0]) {
+      console.error('Create the first administrator with npm run bootstrap-admin before seeding.');
+      process.exit(1);
+    }
+    const report = await seedCatalogue({pool, clock: () => Date.now(), actor: {id: users[0].id, roles: ['super_admin']}});
+    console.log(JSON.stringify(report, null, 2));
+  } finally {
+    await pool.end();
   }
-  const report = await seedCatalogue({pool, clock: () => Date.now(), actor: {id: users[0].id, roles: ['super_admin']}});
-  console.log(JSON.stringify(report, null, 2));
-  await pool.end();
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  seedCli().catch(error => {
+    console.error(error.message);
+    process.exit(1);
+  });
 }
