@@ -1,3 +1,4 @@
+import {opportunityPathways} from './opportunities-content.js';
 export const personUrl=id=>`/people/${encodeURIComponent(id)}/`;
 export const teamGroups=[
  {id:'council',path:'/advisory-council/',label:'Advisory Council',description:'Experience and perspective supporting Foreign Africa’s institutional development and long-term direction.'},
@@ -8,6 +9,12 @@ export const teamGroups=[
 export function resolvePage(pathname){
  const path='/'+pathname.split('/').filter(Boolean).join('/')+'/';
  if(['/about-us/','/who-we-are/','/our-mission-vision/'].includes(path))return {type:'about'};
+ if(['/blog/','/commentaries/','/category/blog/'].includes(path))return {type:'commentaries'};
+ if(path==='/opportunities/')return {type:'opportunities'};
+ const pathway=opportunityPathways.find(item=>item.path===path||(item.id==='enterprise-week'&&path==='/foreign-africa-enterprise-week-few/'));
+ if(pathway)return {type:'opportunity',id:pathway.id};
+ if(path==='/partners/')return {type:'partners'};
+ if(path==='/policy-briefs/')return {type:'policy'};
  if(path==='/our-people/')return {type:'team',group:'council'};
  const group=teamGroups.find(g=>g.path===path);if(group)return {type:'team',group:group.id};
  const profile=path.match(/^\/people\/([a-z0-9-]+)\/$/);if(profile)return {type:'profile',id:profile[1]};

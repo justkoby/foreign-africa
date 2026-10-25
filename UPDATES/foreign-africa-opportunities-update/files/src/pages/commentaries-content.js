@@ -1,0 +1,263 @@
+// Imported from Foreign Africa’s public WordPress API on 25 October 2026.
+// Topics and summaries are editorial browsing aids; dates, titles and bylines retain source attribution.
+export const commentaries = [
+  {
+    "id": "7321",
+    "slug": "ghanas-brics-ambitions-polarisation-asymmetry-and-the-political-economy-of-international-participation",
+    "title": "Ghana’s BRICS Ambitions: Polarisation, Asymmetry and the Political Economy of International Participation",
+    "date": "2026-10-12",
+    "topic": "Diplomacy",
+    "tags": [
+      "Ghana",
+      "BRICS",
+      "AIIB",
+      "investment",
+      "trade",
+      "geopolitics"
+    ],
+    "authors": [
+      "Elorm Mawuli-Kwawu"
+    ],
+    "summary": "What can Ghana’s experience with the Asian Infrastructure Investment Bank reveal about the economic value of prospective BRICS participation?",
+    "image": "/images/commentaries/7321.webp",
+    "imageSource": "https://foreignafrica.org/wp-content/uploads/2026/10/Picture1.png",
+    "sourceUrl": "https://foreignafrica.org/ghanas-brics-ambitions-polarisation-asymmetry-and-the-political-economy-of-international-participation/",
+    "readMinutes": 5
+  },
+  {
+    "id": "7067",
+    "slug": "why-xenophobia-still-persists-in-south-africa-structural-inequality-local-governance-and-the-limits-of-african-integration",
+    "title": "Why Xenophobia Still Persists in South Africa: Structural Inequality, Local Governance, and the Limits of African Integration",
+    "date": "2026-07-21",
+    "topic": "Governance & society",
+    "tags": [
+      "South Africa",
+      "migration",
+      "integration",
+      "xenophobia"
+    ],
+    "authors": [
+      "Gwendoline Nuonzie",
+      "Elorm Mawuli-Kwawu"
+    ],
+    "summary": "How structural inequality, local governance and domestic insecurity test the promise of African integration and solidarity.",
+    "image": "/images/commentaries/7067.webp",
+    "imageSource": "https://foreignafrica.org/wp-content/uploads/2026/07/image-11.png",
+    "sourceUrl": "https://foreignafrica.org/why-xenophobia-still-persists-in-south-africa-structural-inequality-local-governance-and-the-limits-of-african-integration/",
+    "readMinutes": 8
+  },
+  {
+    "id": "6697",
+    "slug": "mobility-without-economic-transformation-why-free-movement-and-regional-integration-have-not-created-enough-jobs-for-east-africas-youth",
+    "title": "Mobility Without Economic Transformation: Why Free Movement and Regional Integration Have Not Created Enough Jobs for East Africa’s Youth",
+    "date": "2026-06-15",
+    "topic": "Trade & jobs",
+    "tags": [
+      "East Africa",
+      "employment",
+      "youth",
+      "mobility",
+      "trade"
+    ],
+    "authors": [
+      "Hildana Mesai"
+    ],
+    "summary": "Why freer movement across East Africa has not translated into enough productive, stable employment for young people.",
+    "image": "/images/commentaries/6697.webp",
+    "imageSource": "https://foreignafrica.org/wp-content/uploads/2026/06/industry.webp",
+    "sourceUrl": "https://foreignafrica.org/mobility-without-economic-transformation-why-free-movement-and-regional-integration-have-not-created-enough-jobs-for-east-africas-youth/",
+    "readMinutes": 6
+  },
+  {
+    "id": "6699",
+    "slug": "nigeria-morocco-transcontinental-gas-pipeline-the-political-economy-of-multilateral-energy-infrastructures-in-africa",
+    "title": "Nigeria-Morocco Transcontinental Gas Pipeline: The Political Economy of Multilateral Energy Infrastructures in Africa",
+    "date": "2026-05-24",
+    "topic": "Energy",
+    "tags": [
+      "Nigeria",
+      "Morocco",
+      "gas",
+      "pipeline",
+      "infrastructure"
+    ],
+    "authors": [
+      "Col. Augustine Awuku-Annie",
+      "Aleemah Williams",
+      "Elorm Mawuli-Kwawu"
+    ],
+    "summary": "What the Nigeria–Morocco Gas Pipeline reveals about regional integration, shared infrastructure and the distribution of economic gains.",
+    "image": "/images/commentaries/6699.webp",
+    "imageSource": "https://foreignafrica.org/wp-content/uploads/2026/07/morocco.jpeg",
+    "sourceUrl": "https://foreignafrica.org/nigeria-morocco-transcontinental-gas-pipeline-the-political-economy-of-multilateral-energy-infrastructures-in-africa/",
+    "readMinutes": 7
+  },
+  {
+    "id": "6701",
+    "slug": "a-framework-not-a-finish-line-reparatory-justice-and-the-role-of-the-african-union",
+    "title": "A Framework, not a Finish Line: Reparatory Justice and the Role of the African Union",
+    "date": "2026-04-14",
+    "topic": "Governance & society",
+    "tags": [
+      "African Union",
+      "reparations",
+      "justice",
+      "policy"
+    ],
+    "authors": [
+      "Azanya Abraham Maslow"
+    ],
+    "summary": "Examining the African Union’s role in turning a framework for reparatory justice into coordinated action.",
+    "image": "/images/commentaries/6701.webp",
+    "imageSource": "https://foreignafrica.org/wp-content/uploads/2025/11/reparat.webp",
+    "sourceUrl": "https://foreignafrica.org/a-framework-not-a-finish-line-reparatory-justice-and-the-role-of-the-african-union/",
+    "readMinutes": 6
+  },
+  {
+    "id": "6703",
+    "slug": "whos-coaching-the-continent-afcon-and-the-long-shadow-of-foreign-expertise",
+    "title": "Who’s Coaching the Continent? AFCON and the Long Shadow of Foreign Expertise",
+    "date": "2026-01-04",
+    "topic": "Sport & diplomacy",
+    "tags": [
+      "football",
+      "AFCON",
+      "coaching",
+      "expertise"
+    ],
+    "authors": [
+      "Abdul Karim Ibrahim"
+    ],
+    "summary": "What national-team coaching choices reveal about institutional confidence, expertise and the political economy of African football.",
+    "image": "/images/commentaries/6703.webp",
+    "imageSource": "https://foreignafrica.org/wp-content/uploads/2026/07/coach.avif",
+    "sourceUrl": "https://foreignafrica.org/whos-coaching-the-continent-afcon-and-the-long-shadow-of-foreign-expertise/",
+    "readMinutes": 6
+  },
+  {
+    "id": "6705",
+    "slug": "when-women-lead-the-promise-and-burden-of-change-in-africa",
+    "title": "When Women Lead: The Promise and Burden of Change In Africa",
+    "date": "2025-11-06",
+    "topic": "Governance & society",
+    "tags": [
+      "women",
+      "leadership",
+      "elections",
+      "Tanzania"
+    ],
+    "authors": [
+      "Elorm Mawuli-Kwawu"
+    ],
+    "summary": "Women’s rise to the presidency reveals both the promise of representation and the institutional constraints on political change.",
+    "image": "/images/commentaries/6705.webp",
+    "imageSource": "https://foreignafrica.org/wp-content/uploads/2026/07/Tanzania.avif",
+    "sourceUrl": "https://foreignafrica.org/when-women-lead-the-promise-and-burden-of-change-in-africa/",
+    "readMinutes": 6
+  },
+  {
+    "id": "6707",
+    "slug": "cote-divoires-2025-election-the-metrics-of-uncertainty",
+    "title": "Côte d’Ivoire’s 2025 Election: The Metrics of Uncertainty",
+    "date": "2025-10-24",
+    "topic": "Governance & society",
+    "tags": [
+      "Côte d’Ivoire",
+      "election",
+      "governance"
+    ],
+    "authors": [
+      "Elorm Mawuli-Kwawu"
+    ],
+    "summary": "Questions of inclusion, legitimacy and regional accountability surrounding Côte d’Ivoire’s 2025 election.",
+    "image": "/images/commentaries/6707.webp",
+    "imageSource": "https://foreignafrica.org/wp-content/uploads/2026/07/outtara.jpg",
+    "sourceUrl": "https://foreignafrica.org/cote-divoires-2025-election-the-metrics-of-uncertainty/",
+    "readMinutes": 5
+  },
+  {
+    "id": "6709",
+    "slug": "stadium-diplomacy-in-africa-concrete-grass-and-geopolitics",
+    "title": "Stadium Diplomacy In Africa: Concrete, Grass And Geopolitics",
+    "date": "2025-09-09",
+    "topic": "Sport & diplomacy",
+    "tags": [
+      "stadiums",
+      "China",
+      "diplomacy",
+      "infrastructure"
+    ],
+    "authors": [
+      "Elorm Mawuli-Kwawu"
+    ],
+    "summary": "The geopolitical ambitions and public priorities behind Africa’s growing landscape of stadium diplomacy.",
+    "image": "/images/commentaries/6709.webp",
+    "imageSource": "https://foreignafrica.org/wp-content/uploads/2026/07/stadium.jpg",
+    "sourceUrl": "https://foreignafrica.org/stadium-diplomacy-in-africa-concrete-grass-and-geopolitics/",
+    "readMinutes": 5
+  },
+  {
+    "id": "6711",
+    "slug": "john-mahamas-strategic-reset-in-africa-asia-engagement",
+    "title": "John Mahama’s Strategic Reset in Africa-Asia Engagement",
+    "date": "2025-08-31",
+    "topic": "Diplomacy",
+    "tags": [
+      "Ghana",
+      "Asia",
+      "Mahama",
+      "Japan",
+      "Singapore",
+      "trade"
+    ],
+    "authors": [
+      "Elorm Mawuli-Kwawu"
+    ],
+    "summary": "What Ghana’s engagement with Japan and Singapore signals about investment, development and the diversification of global partnerships.",
+    "image": "/images/commentaries/6711.webp",
+    "imageSource": "https://foreignafrica.org/wp-content/uploads/2025/08/Mahama-Politi.jpg",
+    "sourceUrl": "https://foreignafrica.org/john-mahamas-strategic-reset-in-africa-asia-engagement/",
+    "readMinutes": 5
+  },
+  {
+    "id": "6713",
+    "slug": "us-to-cancel-55-million-visas-countless-questions-about-the-african-agency",
+    "title": "US to Cancel 55 Million Visas, Countless Questions about the African Agency",
+    "date": "2025-08-26",
+    "topic": "Diplomacy",
+    "tags": [
+      "United States",
+      "visas",
+      "migration",
+      "African agency"
+    ],
+    "authors": [
+      "Elorm Mawuli-Kwawu"
+    ],
+    "summary": "Examining African diplomatic agency in response to US visa restrictions and changing global migration rules.",
+    "image": "/images/commentaries/6713.webp",
+    "imageSource": "https://foreignafrica.org/wp-content/uploads/2025/08/leaders-africa-scaled.webp",
+    "sourceUrl": "https://foreignafrica.org/us-to-cancel-55-million-visas-countless-questions-about-the-african-agency/",
+    "readMinutes": 6
+  },
+  {
+    "id": "6715",
+    "slug": "from-the-margins-to-the-centre-africa-is-rewriting-the-rules-of-global-power",
+    "title": "From the Margins to the Centre, Africa Is Rewriting the Rules of Global Power",
+    "date": "2025-08-20",
+    "topic": "Diplomacy",
+    "tags": [
+      "global power",
+      "foreign policy",
+      "African agency"
+    ],
+    "authors": [
+      "Elorm Mawuli-Kwawu"
+    ],
+    "summary": "Exploring Africa’s changing role in global power and the case for conversations led by African perspectives.",
+    "image": "/images/commentaries/6715.webp",
+    "imageSource": "https://foreignafrica.org/wp-content/uploads/2025/08/Africa.jpg",
+    "sourceUrl": "https://foreignafrica.org/from-the-margins-to-the-centre-africa-is-rewriting-the-rules-of-global-power/",
+    "readMinutes": 5
+  }
+];

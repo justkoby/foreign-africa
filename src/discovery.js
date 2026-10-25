@@ -16,7 +16,7 @@ const topics = {
  opportunity:['opportunity','opportunities','apply','application','applications','eligible','eligibility','deadline','deadlines','open'],
  recording:['recording','recordings','video','videos','youtube','transcript','transcripts','timestamp','timestamps','webinar','webinars','podcast'],
 };
-const tags = [ ['research','trade','enterprise'],['research','enterprise','diplomacy'],['trade','jobs'],['enterprise','learning'],['learning'],['diplomacy'],['internship','opportunity'],['fellowship','opportunity'],['research','opportunity'],['volunteer','opportunity'] ];
+const tags = [ ['research','trade','enterprise'],['research','enterprise','diplomacy'],['trade','jobs'],['enterprise','learning'],['learning'],['diplomacy'],['internship','opportunity'],['fellowship','opportunity'],['research','opportunity'],['volunteer','opportunity'],['enterprise','opportunity'] ];
 export const catalogue = [...innerPageDirectory,...resources.map((r,i)=>({...r,id:`fa-${i+1}`,topics:tags[i],status:'unverified'})),...activities.map(s=>({id:`update-${s.id}`,title:s.title,type:'Update',description:s.summary,url:storyUrl(s.id),topics:s.topics,status:'published',date:s.date}))];
 export const categories = ['All','Research','Programme','Opportunity','Update','About','People'];
 export const suggestions = ['Find research on trade and jobs','Learning opportunities for entrepreneurs','Explore internships and fellowships','Find meeting recordings'];

@@ -1,0 +1,347 @@
+{
+  "base": "8f89359d5012820d65307cdb12c380d5864dfcd5",
+  "commentariesFiles": [
+    "README.md",
+    "docs/commentaries-update.md",
+    "public/images/commentaries/6697.webp",
+    "public/images/commentaries/6699.webp",
+    "public/images/commentaries/6701.webp",
+    "public/images/commentaries/6703.webp",
+    "public/images/commentaries/6705.webp",
+    "public/images/commentaries/6707.webp",
+    "public/images/commentaries/6709.webp",
+    "public/images/commentaries/6711.webp",
+    "public/images/commentaries/6713.webp",
+    "public/images/commentaries/6715.webp",
+    "public/images/commentaries/7067.webp",
+    "public/images/commentaries/7321.webp",
+    "src/content.js",
+    "src/main.jsx",
+    "src/menu-content.js",
+    "src/pages/CommentariesPage.jsx",
+    "src/pages/InnerPages.jsx",
+    "src/pages/commentaries-content.js",
+    "src/pages/commentaries-search.js",
+    "src/pages/commentaries.css",
+    "src/pages/page-directory.js",
+    "src/pages/routes.js",
+    "tests/commentaries.test.js"
+  ],
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 11355,
+      "sha256": "0f00af5f01bb12df783bd28daa8aeda1adff48e6096607ce38107731ffcb7952"
+    },
+    {
+      "path": "docs/commentaries-update.md",
+      "bytes": 3320,
+      "sha256": "4589b0c840cdfd7a587d6dfb8e93aaff5ec2537f8a901d9f05f022403bf2ee1d"
+    },
+    {
+      "path": "public/documents/policy-briefs/reparatory-justice/brief.pdf",
+      "bytes": 232684,
+      "sha256": "27eb9a1251cefc66b81a964cfc13aa4d36fc500bd314318edcf12ed75401bdaf"
+    },
+    {
+      "path": "public/documents/policy-briefs/reparatory-justice/cover.webp",
+      "bytes": 22202,
+      "sha256": "81b9df2b46e0f583fc666bf0c461d59348fb68d69f9f58dd88532d85e039f7f1"
+    },
+    {
+      "path": "public/documents/policy-briefs/reparatory-justice/page-1.webp",
+      "bytes": 54800,
+      "sha256": "2b8842de54982e080a74f84c21b159fdbdb142276c93dc8d77c229e60ccd2078"
+    },
+    {
+      "path": "public/documents/policy-briefs/reparatory-justice/page-10.webp",
+      "bytes": 181634,
+      "sha256": "fe848dfab55f24e9bdc09082a923a0eec12af2ad66db963d4965f78fdd3f930d"
+    },
+    {
+      "path": "public/documents/policy-briefs/reparatory-justice/page-2.webp",
+      "bytes": 104072,
+      "sha256": "ba8cd0fc118403c52b301b0db4e8e59fadc8f0d888efd9797b423b8e00ca5c68"
+    },
+    {
+      "path": "public/documents/policy-briefs/reparatory-justice/page-3.webp",
+      "bytes": 169168,
+      "sha256": "6db37d13847c10b72345946dc49259e95a57b41a799ba13480b5cd57adeeb8cc"
+    },
+    {
+      "path": "public/documents/policy-briefs/reparatory-justice/page-4.webp",
+      "bytes": 249590,
+      "sha256": "bcdfb3dabbb47bd4cdb64bba8514ef6157f7a8a77d741a6098d917cf84f72a4e"
+    },
+    {
+      "path": "public/documents/policy-briefs/reparatory-justice/page-5.webp",
+      "bytes": 251994,
+      "sha256": "b3ea29125543fed9a8e1ff584b4d4ed099ec1e1dc951f19f738e4eb5316101a8"
+    },
+    {
+      "path": "public/documents/policy-briefs/reparatory-justice/page-6.webp",
+      "bytes": 227596,
+      "sha256": "25d789fdd77dd4e40e3f0b9bb4453e1628bfa54596c535d590703e3d8eab04a0"
+    },
+    {
+      "path": "public/documents/policy-briefs/reparatory-justice/page-7.webp",
+      "bytes": 142780,
+      "sha256": "16c8dd4c804c228df363f8d81eb69b3810906a8a4d9c69c4c6b2a6f83793a13d"
+    },
+    {
+      "path": "public/documents/policy-briefs/reparatory-justice/page-8.webp",
+      "bytes": 233130,
+      "sha256": "8ec73ffb00d58e3aad5a16b9d9b7f74ec147ccf10b916125c59eb71a51fc5260"
+    },
+    {
+      "path": "public/documents/policy-briefs/reparatory-justice/page-9.webp",
+      "bytes": 171660,
+      "sha256": "afdceab915b5994e52d6f709cd8fbfdcfcc543b6c831b42bb2c6d466d9c740ba"
+    },
+    {
+      "path": "public/documents/policy-briefs/reparatory-justice/text.json",
+      "bytes": 19309,
+      "sha256": "f46709d81a3b7b4432d2ce0a1aa9b05a3ebd4677a83cf635ff4bd08269dc68bf"
+    },
+    {
+      "path": "public/documents/policy-briefs/the-wrong-indicator/brief.pdf",
+      "bytes": 367301,
+      "sha256": "d197f685c79fdf622a8ce85d34ef7eb9c215d7ab23916ae7d17536e25b2318ec"
+    },
+    {
+      "path": "public/documents/policy-briefs/the-wrong-indicator/cover.webp",
+      "bytes": 18646,
+      "sha256": "cfd1406ca9e90c362a08c3d59896ed74d888b2cb3e9964ffcb8a6222a8b76058"
+    },
+    {
+      "path": "public/documents/policy-briefs/the-wrong-indicator/page-1.webp",
+      "bytes": 50694,
+      "sha256": "0a8c90fda8af1a8edee165c52b944595cf748caafa738519eff0470cbdc8a9c8"
+    },
+    {
+      "path": "public/documents/policy-briefs/the-wrong-indicator/page-2.webp",
+      "bytes": 225510,
+      "sha256": "c55df73baca38131a78cc1e953d6ee13747aa844fa1d54358056c77cfd1b039b"
+    },
+    {
+      "path": "public/documents/policy-briefs/the-wrong-indicator/page-3.webp",
+      "bytes": 256048,
+      "sha256": "138acb9c153a36453c792c5b8cb54c1091446f3bcf106a46e1f945be6e9a95f2"
+    },
+    {
+      "path": "public/documents/policy-briefs/the-wrong-indicator/page-4.webp",
+      "bytes": 222630,
+      "sha256": "bf8749606996d4d892c6c9029f97d8dfec96e344ab482a593c93ff16c047386c"
+    },
+    {
+      "path": "public/documents/policy-briefs/the-wrong-indicator/page-5.webp",
+      "bytes": 239242,
+      "sha256": "8d5706dbbdb25b3ae63939ee60e91760388b5b146d1b461d6f33ecd3f998adf0"
+    },
+    {
+      "path": "public/documents/policy-briefs/the-wrong-indicator/page-6.webp",
+      "bytes": 294824,
+      "sha256": "90dee33a77aa899d3e3c922a93e2eae01f4e46a698f837858e372d132dd78fab"
+    },
+    {
+      "path": "public/documents/policy-briefs/the-wrong-indicator/page-7.webp",
+      "bytes": 109550,
+      "sha256": "4421b2468f3381220144053f48dc18999ee65915b87edd38b1d2db9d3d5ee15a"
+    },
+    {
+      "path": "public/documents/policy-briefs/the-wrong-indicator/text.json",
+      "bytes": 17173,
+      "sha256": "b8f61d6a722bd78f08798adef7e4d0e55da688081bbb95447fe93bf5243a28ac"
+    },
+    {
+      "path": "public/images/commentaries/6697.webp",
+      "bytes": 131052,
+      "sha256": "09027791f167d0ebd8eeda72f9dc9ffed8d80a1b63f617602c7bbe2050693d11"
+    },
+    {
+      "path": "public/images/commentaries/6699.webp",
+      "bytes": 58932,
+      "sha256": "f557a1d3238894be7bc78172355d1e404d22ea968ede471dbfa0c20b8347e6c2"
+    },
+    {
+      "path": "public/images/commentaries/6701.webp",
+      "bytes": 159540,
+      "sha256": "8abc33c479d98f5ae13a5d627c7cdd7ec812aa6f0872781e6d966b3efd2c912f"
+    },
+    {
+      "path": "public/images/commentaries/6703.webp",
+      "bytes": 53846,
+      "sha256": "99505f34f5f8fa64e319d44fe77236beb186875f69097704c38106ab8489300d"
+    },
+    {
+      "path": "public/images/commentaries/6705.webp",
+      "bytes": 67368,
+      "sha256": "21fbe498cf1cacdafee385a92b4f7ce996cc8f4155f179c9020012d54d7559ce"
+    },
+    {
+      "path": "public/images/commentaries/6707.webp",
+      "bytes": 222562,
+      "sha256": "67d772a68dcf1988a8d84edd505624e93043074d87a177b39dcde4ac3b321001"
+    },
+    {
+      "path": "public/images/commentaries/6709.webp",
+      "bytes": 97130,
+      "sha256": "7931cc07fa7e8207b4655c29630ec2d191416d6c93f8d29b389d42c325171ed8"
+    },
+    {
+      "path": "public/images/commentaries/6711.webp",
+      "bytes": 131742,
+      "sha256": "e0c2ce7a1a3f7543ca5adb2ed1ab808f4be8f3631f08b59f86da9734f955ccd3"
+    },
+    {
+      "path": "public/images/commentaries/6713.webp",
+      "bytes": 127504,
+      "sha256": "b26970ac03799bb74d492cc672b2b4a5744efb4d8ab206ea84d085b77afc362b"
+    },
+    {
+      "path": "public/images/commentaries/6715.webp",
+      "bytes": 100154,
+      "sha256": "1be507e129db98b06d045d3cfc2f8e5ebc0682b17d61fbc47c0281965105ca81"
+    },
+    {
+      "path": "public/images/commentaries/7067.webp",
+      "bytes": 208328,
+      "sha256": "ace27daedbfd8f00d61f09df492cbc66dca09594ed3d5c1b180b75aaf44d3808"
+    },
+    {
+      "path": "public/images/commentaries/7321.webp",
+      "bytes": 122076,
+      "sha256": "7b4adc0cba1d3c2330359b81cebd8f9196aa8bed6e6cfba4b3997ebc98d8cb51"
+    },
+    {
+      "path": "public/images/partners/aasu.webp",
+      "bytes": 10984,
+      "sha256": "b412b14bc3b44f2526e82e402d2aebcec076747eae55497036e5e140cc24792b"
+    },
+    {
+      "path": "public/images/partners/accord.webp",
+      "bytes": 4782,
+      "sha256": "23f4775ed0b31c26613f598214d82aaadb4cc3c68093a6e047824676f33a22bd"
+    },
+    {
+      "path": "public/images/partners/fco.webp",
+      "bytes": 2890,
+      "sha256": "0a82af00a16af8b538645e150a6b3348a346ed3511f2944b3aa328afc7f80cc7"
+    },
+    {
+      "path": "public/images/partners/gfza.webp",
+      "bytes": 2376,
+      "sha256": "15dd82b1700ddc00dc3c6772037d15e3909a17a81ad8fbfa77d43ef57d55668c"
+    },
+    {
+      "path": "public/images/partners/ippa.webp",
+      "bytes": 2960,
+      "sha256": "88e092cdf430de44436fd26d19f4f6620d310da1180eba24812c539ee1662cfc"
+    },
+    {
+      "path": "public/images/partners/rocky-dawuni.webp",
+      "bytes": 3338,
+      "sha256": "5ac505d41fbf0bc28e02e97955e9ee0b115992559fd14593476ecdac6d454273"
+    },
+    {
+      "path": "scripts/render-policy-briefs.py",
+      "bytes": 1981,
+      "sha256": "ff6763732514d72bd6de74d6be440e72f5df3143e3f565d3a2232f160fb2a774"
+    },
+    {
+      "path": "src/PartnerStrip.jsx",
+      "bytes": 1337,
+      "sha256": "7d78cc88c21c2c21d36a0ca9ef0daf7457ca5efb3a8c6afc0bfc4be25a8897b4"
+    },
+    {
+      "path": "src/content.js",
+      "bytes": 2221,
+      "sha256": "762c897ca9c5f90592b42a79b5c74cf463c43a7de7cc243e98013a2f5104c91b"
+    },
+    {
+      "path": "src/main.jsx",
+      "bytes": 13543,
+      "sha256": "fc437de2153309c2e08f2c2cae50d6d395c18146c056d0219d0e92bab89a918d"
+    },
+    {
+      "path": "src/menu-content.js",
+      "bytes": 3489,
+      "sha256": "1682d2e1ea2be842b45a786a95b525bbbc3ed733a09aa58c425eff080c1efc21"
+    },
+    {
+      "path": "src/pages/CommentariesPage.jsx",
+      "bytes": 6515,
+      "sha256": "8520e0636efb07a2d16498ecae2ebc38acd98761af61d238bda9652484c1f3a2"
+    },
+    {
+      "path": "src/pages/DocumentReader.jsx",
+      "bytes": 5055,
+      "sha256": "2ddbb4db3ea71b421dd0d22e91b8671a889ad26dd43c207630dcce283d25c3ed"
+    },
+    {
+      "path": "src/pages/InnerPages.jsx",
+      "bytes": 10344,
+      "sha256": "9e288207b7cc321290904b4809f70388209b3472d4509600bb67bffea6d59531"
+    },
+    {
+      "path": "src/pages/PartnersPolicyPages.jsx",
+      "bytes": 5083,
+      "sha256": "bf3122be89d7372d2ff064ad6214a98d87d91b296e023635a809e54f85f2ce24"
+    },
+    {
+      "path": "src/pages/commentaries-content.js",
+      "bytes": 10722,
+      "sha256": "e1d29ed23af62ca9aea80e41554580a06d1d8f1b721b5ecffb75626929487ecd"
+    },
+    {
+      "path": "src/pages/commentaries-search.js",
+      "bytes": 1101,
+      "sha256": "89a7b2abdc39406989c2c5bffc564ff68b526e002ed8d825949dc7ec968626ac"
+    },
+    {
+      "path": "src/pages/commentaries.css",
+      "bytes": 10854,
+      "sha256": "6992e8010c3eb30efa60829317e5711348be5e2dd4b95c27b836fc8027c0917e"
+    },
+    {
+      "path": "src/pages/page-directory.js",
+      "bytes": 1697,
+      "sha256": "c0a7e46620fe19a3e4c75c351ac1aec1bf0af4ac14415d32a09584c6a258143a"
+    },
+    {
+      "path": "src/pages/policy-content.js",
+      "bytes": 1865,
+      "sha256": "507f12f20676bda5b3efcb6336b17b1f07fe1e35934a00e4e640e506449f1d02"
+    },
+    {
+      "path": "src/pages/routes.js",
+      "bytes": 1446,
+      "sha256": "440b909ad0ae2bc60cf3428baf8d1f590eff76e8a8367aee9cc4699c0172a301"
+    },
+    {
+      "path": "src/partners-policy.css",
+      "bytes": 11724,
+      "sha256": "ac2cafd6187af0fac91758968e4d97f5a3f625444d0fa068f4c59082a644a32a"
+    },
+    {
+      "path": "src/partners.js",
+      "bytes": 797,
+      "sha256": "ae9ed60a16937e8ec0c8230c0f94bac63255f304271dee9c781dd57d1940770f"
+    },
+    {
+      "path": "tests/commentaries.test.js",
+      "bytes": 2384,
+      "sha256": "babf5a1dbd5fd6a3247be30ccc0ebacf074226623752a442c3666499d47c48a9"
+    },
+    {
+      "path": "tests/publications-partners.test.js",
+      "bytes": 1694,
+      "sha256": "5f7d73d66569d1902a323de1de57c2d68539ba18bfb3f9d733942e3a95c97f3a"
+    },
+    {
+      "path": "tests/search.test.js",
+      "bytes": 853,
+      "sha256": "b5e968061c856ecd113953eacf36073cfcf97e215f9ff010f31f755ccfb583de"
+    }
+  ]
+}

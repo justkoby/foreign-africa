@@ -72,3 +72,21 @@ The new embassy hero uses an AI-assisted office extension and subtle colour/ligh
 ## About, people and mega menu
 
 Local inner pages now include `/who-we-are/`, `/advisory-council/`, `/executive-leadership/`, `/secretariat/`, `/junior-associates/` and ten individual `/people/.../` biographies. `src/pages/` contains the reusable page system and supplied editorial content; `src/SiteHeader.jsx` and `src/menu-content.js` provide shared desktop mega menus and mobile disclosure navigation. See `docs/about-team-update.md` for integration, provenance and validation limits. The production host must support SPA deep links while preserving API and asset routing. CMS persistence remains pending.
+
+## Partners and policy briefs
+
+`/partners/` now provides individual partner cards, using the existing six partner names and marks. The homepage uses the same model (`src/partners.js`) for a continuous logo strip with a pause button, hover/focus pause, and a manually scrollable reduced-motion layout. Four logos use supplied source assets; GFZA and IPPA are extracted from the existing strip and retain its lower resolution. No external partner destinations or specific relationship claims have been invented.
+
+`/policy-briefs/` presents the supplied July and September 2026 briefs with their real covers, issue metadata, source-based summaries and takeaways. The reader opens on demand, with page selection, previous/next, zoom, an expanded dialog (Escape and keyboard focus containment), reflowed selectable text and original PDF open/download links. Page images preserve the document layout across mobile browsers. Text extraction can lose chart/table structure; the interface points readers to Original for those. PDFs are not downloaded on catalogue load; the reader module and individual reading assets load on demand.
+
+Original PDFs, cover thumbnails, page images and extracted text live in `public/documents/policy-briefs/<slug>/`. Run `python scripts/render-policy-briefs.py` with PyMuPDF and Pillow installed to regenerate derived assets after replacing a PDF. Update `src/pages/policy-content.js` if page counts or metadata change. Summaries and takeaways are editorial adaptations of the supplied documents, not independent verification of their claims. Future CMS publication must generate these assets and validate page counts before publishing. No live database changes are included.
+
+Navigation, homepage policy links and Smart Discovery now point to these local routes. Validation: 29 Node tests, production build, and browser checks of desktop layouts plus 390px iframe viewports; publication reader page navigation, text mode and expansion were exercised.
+
+## Commentaries archive
+
+The `/blog/` listing now includes a featured commentary, twelve source-backed publication records, local WebP images, named bylines, approximate reading times, keyword/topic/year filters, date ordering and progressive loading. Original article links are preserved; article bodies remain on the existing WordPress site. `/commentaries/` and `/category/blog/` are aliases. Navigation and Smart Discovery connect to the archive and source articles. See `docs/commentaries-update.md` for provenance, validation and the WordPress cutover requirement.
+
+## Opportunities overviews
+
+The homepage now introduces Fellowships, Calls for Papers, Volunteer Opportunities and Enterprise Week through shared pathway cards. `/opportunities/` and four local overview pages provide clear programme introductions, status messages, focus areas, email enquiries and related routes. Existing opportunity URLs are retained; the Remote Internship Programme keeps its separate original page. No live call, application, registration, email sending or subscription backend is implied. See `docs/opportunities-update.md` for content provenance, availability handling and publishing requirements.
