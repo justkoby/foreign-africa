@@ -1,0 +1,9 @@
+import React,{useEffect,useRef,useState} from 'react';
+import {ArrowUpRight,ArrowDown} from 'lucide-react';
+import {interns} from './people.js';
+import {page} from './content.js';
+export default function PeopleSection(){
+ const cards=useRef([]);const [highlight,setHighlight]=useState(interns[0].id);
+ useEffect(()=>{if(!('IntersectionObserver' in window))return;const observer=new IntersectionObserver(entries=>{const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>Math.abs(a.boundingClientRect.top-window.innerHeight*.3)-Math.abs(b.boundingClientRect.top-window.innerHeight*.3));if(visible[0])setHighlight(visible[0].target.dataset.person)},{rootMargin:'-15% 0px -35% 0px',threshold:0});cards.current.forEach(c=>c&&observer.observe(c));return()=>observer.disconnect()},[]);
+ return <section className="people-section" id="people"><div className="container people-layout"><div className="people-intro"><p className="eyebrow">THE PEOPLE BEHIND THE POSSIBILITY</p><h2>Many perspectives.<br/>A shared<br/><em>ambition.</em></h2><p>Meet the people featured in our Remote Internship Programme cohort. Different backgrounds, connected by the opportunity to learn and contribute.</p><a className="button gold" href={page('remote-internship-programme-rip')}>Explore the programme <ArrowUpRight size={19}/></a><span className="people-scroll"><ArrowDown size={16}/>Scroll to meet the cohort</span></div><div className="people-cards">{interns.filter(p=>p.published).map((p,i)=><article ref={el=>cards.current[i]=el} data-person={p.id} key={p.id} className={`person-card ${highlight===p.id?'is-highlighted':''}`}><div className="person-portrait"><img src={p.portrait.src} alt={p.name} loading="lazy" style={{width:`${2048/p.portrait.width*100}%`,transform:`translate(${-p.portrait.x/2048*100}%,${-p.portrait.y/1152*100}%)`}}/></div><div className="person-copy"><p className="eyebrow">{p.country}</p><h3>{p.name}</h3><p>{p.role}</p></div></article>)}</div></div></section>
+}

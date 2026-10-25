@@ -1,0 +1,23 @@
+/* Mark Pro weights are each file's OS/2 usWeightClass. Narrow cuts are a separate family and are not loaded here. */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
+@font-face{font-family:'Mark Pro';src:url('../fonts/MarkPro-Thin.ttf') format('truetype');font-weight:275;font-style:normal;font-display:swap}
+@font-face{font-family:'Mark Pro';src:url('../fonts/MarkPro-Extlight.ttf') format('truetype');font-weight:300;font-style:normal;font-display:swap}
+@font-face{font-family:'Mark Pro';src:url('../fonts/MarkPro-Light.ttf') format('truetype');font-weight:350;font-style:normal;font-display:swap}
+@font-face{font-family:'Mark Pro';src:url('../fonts/Mark Pro.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'Mark Pro';src:url('../fonts/MarkPro-Book.woff2') format('woff2'),url('../fonts/MarkPro-Book.ttf') format('truetype');font-weight:450;font-style:normal;font-display:swap}
+@font-face{font-family:'Mark Pro';src:url('../fonts/Mark-Pro-Medium (1).woff2') format('woff2'),url('../fonts/Mark-Pro-Medium (1).ttf') format('truetype');font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:'Mark Pro';src:url('../fonts/Mark-Pro-Bold.woff2') format('woff2'),url('../fonts/Mark-Pro-Bold.ttf') format('truetype');font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:'Mark Pro';src:url('../fonts/Mark-Pro-Heavy.woff2') format('woff2'),url('../fonts/Mark-Pro-Heavy.ttf') format('truetype');font-weight:800;font-style:normal;font-display:swap}
+@font-face{font-family:'Mark Pro';src:url('../fonts/MarkPro-Black.woff2') format('woff2'),url('../fonts/MarkPro-Black.ttf') format('truetype');font-weight:900;font-style:normal;font-display:swap}
+@font-face{font-family:'Mark Pro';src:url('../fonts/MarkPro-Ultra.woff2') format('woff2'),url('../fonts/MarkPro-Ultra.ttf') format('truetype');font-weight:950;font-style:normal;font-display:swap}
+
+@font-face{font-family:'Mark Pro';src:url('../fonts/MarkPro-HairlineItalic.ttf') format('truetype');font-weight:250;font-style:italic;font-display:swap}
+@font-face{font-family:'Mark Pro';src:url('../fonts/MarkPro-ExtlightItalic.ttf') format('truetype');font-weight:300;font-style:italic;font-display:swap}
+@font-face{font-family:'Mark Pro';src:url('../fonts/MarkPro-LightItalic.ttf') format('truetype');font-weight:350;font-style:italic;font-display:swap}
+@font-face{font-family:'Mark Pro';src:url('../fonts/MarkPro-Italic.ttf') format('truetype');font-weight:400;font-style:italic;font-display:swap}
+@font-face{font-family:'Mark Pro';src:url('../fonts/MarkPro-BookItalic.woff2') format('woff2'),url('../fonts/MarkPro-BookItalic.ttf') format('truetype');font-weight:450;font-style:italic;font-display:swap}
+@font-face{font-family:'Mark Pro';src:url('../fonts/MarkPro-MediumItalic.woff2') format('woff2'),url('../fonts/MarkPro-MediumItalic.ttf') format('truetype');font-weight:500;font-style:italic;font-display:swap}
+@font-face{font-family:'Mark Pro';src:url('../fonts/MarkPro-BoldItalic.woff2') format('woff2'),url('../fonts/MarkPro-BoldItalic.ttf') format('truetype');font-weight:700;font-style:italic;font-display:swap}
+@font-face{font-family:'Mark Pro';src:url('../fonts/MarkPro-HeavyItalic.ttf') format('truetype');font-weight:800;font-style:italic;font-display:swap}
+@font-face{font-family:'Mark Pro';src:url('../fonts/MarkPro-BlackItalic-1.ttf') format('truetype');font-weight:900;font-style:italic;font-display:swap}

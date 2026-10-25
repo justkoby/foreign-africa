@@ -1,0 +1,169 @@
+{
+  "revision": 2,
+  "baseline_commit": "bbcd16a",
+  "update_commit": "1da370cd5f013941463b4ccdce16a888915d699a",
+  "files": [
+    {
+      "path": "README.md",
+      "action": "merge-preserving-newer-work",
+      "archive_path": "merge-reference/README.md",
+      "sha256": "d9cca72483db216e081c230dd587f55354f60b4a82aed39aab59c1a73f61d0fc"
+    },
+    {
+      "path": "docs/about-team-update.md",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/docs/about-team-update.md",
+      "sha256": "16b40e165e39e5f6ad5e2dd0bb98c74dc4ea4560b0b26bd7bea9a3222f079b7d"
+    },
+    {
+      "path": "docs/content-sources.md",
+      "action": "merge-preserving-newer-work",
+      "archive_path": "merge-reference/docs/content-sources.md",
+      "sha256": "b3bf6ec38268e7cd48970e789b7956bed82dc5ca2db2f8d9ac4355e7786d6fcc"
+    },
+    {
+      "path": "public/images/team/abdul.png",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/public/images/team/abdul.png",
+      "sha256": "78d716f887388e0845929aadf110eefb244080827b2475f05c983c83d46109b6"
+    },
+    {
+      "path": "public/images/team/debrenna.webp",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/public/images/team/debrenna.webp",
+      "sha256": "5dd4c2472987617c6cfb40df614f3a4933e71606b72980e8f32fab3afce4add2"
+    },
+    {
+      "path": "public/images/team/elorm.png",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/public/images/team/elorm.png",
+      "sha256": "1a9d17f7263b9c2980f76d24da10658054adc8702436fabbecc2def509bbe15c"
+    },
+    {
+      "path": "public/images/team/emmanuel.png",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/public/images/team/emmanuel.png",
+      "sha256": "1c87abc12d3e7bfbf86d546dacb28ac3da8655083795a38f0770bcdc5b46c86e"
+    },
+    {
+      "path": "public/images/team/james.png",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/public/images/team/james.png",
+      "sha256": "00d86f28d4065fac7b89a69bcf0c133f9fa31b01fb16694ddb46c7dfff664840"
+    },
+    {
+      "path": "public/images/team/mikdad.webp",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/public/images/team/mikdad.webp",
+      "sha256": "e881c2ff732d0f710daf06b874e50c433b2c5edf2d4813fe5381850a9ed9ed2f"
+    },
+    {
+      "path": "public/images/team/mushara.webp",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/public/images/team/mushara.webp",
+      "sha256": "bae2c155f98cc96b1fb37ba656a0f41a4600af42e1c25c758bd78054f2f0818c"
+    },
+    {
+      "path": "public/images/team/nana.png",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/public/images/team/nana.png",
+      "sha256": "bffe0745fa96f8593aa82138575fdd2cd5f0009d0c5dbe00117e11e379cb5500"
+    },
+    {
+      "path": "public/images/team/rexford.png",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/public/images/team/rexford.png",
+      "sha256": "03bddfbbff1d78c7fb846017dcbfffd9244f6f9fce323272e11e59573d3d02f7"
+    },
+    {
+      "path": "public/images/team/rita.png",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/public/images/team/rita.png",
+      "sha256": "6caad001b9fbfddc0e37cb4f448a2055366b35caceb40160f293d11eecb51ba7"
+    },
+    {
+      "path": "scripts/export-content.mjs",
+      "action": "merge-preserving-newer-work",
+      "archive_path": "merge-reference/scripts/export-content.mjs",
+      "sha256": "ad964e131918f08959d4f6d09c67e4feb23f7a3d5039ba402cbd10fb01d8d7e2"
+    },
+    {
+      "path": "src/SiteHeader.jsx",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/src/SiteHeader.jsx",
+      "sha256": "0678e02ffd1451abe6479b3d19f48df0f2e265ca3a9f55e1b5f27dde034be461"
+    },
+    {
+      "path": "src/discovery.js",
+      "action": "merge-preserving-newer-work",
+      "archive_path": "merge-reference/src/discovery.js",
+      "sha256": "e2a8e17cbc8efe11914f270c8c71b21842794a2c53c325a70c8466a51abbdd9e"
+    },
+    {
+      "path": "src/main.jsx",
+      "action": "merge-preserving-newer-work",
+      "archive_path": "merge-reference/src/main.jsx",
+      "sha256": "01cf3706c4003a10c4df0526277449866e11d16bfb1092d50bdad3a2fff3ff27"
+    },
+    {
+      "path": "src/menu-content.js",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/src/menu-content.js",
+      "sha256": "39839b296d70b80cf637af7c8a8b80f7659be2f9541e9a3c4711220429d123cc"
+    },
+    {
+      "path": "src/pages/InnerPages.jsx",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/src/pages/InnerPages.jsx",
+      "sha256": "44a4904f2b8a5b105e28b8ecf65a84060e7689e665d642b65e394b08bd9e0865"
+    },
+    {
+      "path": "src/pages/about-content.js",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/src/pages/about-content.js",
+      "sha256": "50b37f40add9253b5d7caf84b38781a71c354eef18a843043fca26f9cd7f476c"
+    },
+    {
+      "path": "src/pages/inner-pages.css",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/src/pages/inner-pages.css",
+      "sha256": "b55d7add9d6718c42ac64b5e3bdb251d15c8fa9abdf2b8791e811ce8a4ad3e1e"
+    },
+    {
+      "path": "src/pages/page-directory.js",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/src/pages/page-directory.js",
+      "sha256": "3737b6bddb53d6a069c3a7f7aaa54c95c45eb08b6dfdfbda5495de9f0ca0a175"
+    },
+    {
+      "path": "src/pages/routes.js",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/src/pages/routes.js",
+      "sha256": "8ef6b5f39253cf6f1b59f6bf3dc7cb9c876672730c28840ae039cd6d5261d7e1"
+    },
+    {
+      "path": "src/pages/team-content.js",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/src/pages/team-content.js",
+      "sha256": "c025ebdf4fe734e7a1f981737e8fe5e4fb086e2718b1dcc6618dd7eff358c435"
+    },
+    {
+      "path": "src/site-header.css",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/src/site-header.css",
+      "sha256": "e93ff187ab11bb1c2bfee4581920335c77e162081941c58407c59643496c9ae0"
+    },
+    {
+      "path": "supabase/content-seed.json",
+      "action": "merge-preserving-newer-work",
+      "archive_path": "merge-reference/supabase/content-seed.json",
+      "sha256": "55b549d3ff51e58bb21ffe61196cee257c957d35933efd9ed75ba2ebacac0bd7"
+    },
+    {
+      "path": "tests/inner-pages.test.js",
+      "action": "add-or-merge-if-existing",
+      "archive_path": "new-files/tests/inner-pages.test.js",
+      "sha256": "17ad81c533ebbfee91ddd6dd888c2d26ebe2113c7c4296b0cfd33d14351561e1"
+    }
+  ]
+}
