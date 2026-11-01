@@ -2,6 +2,7 @@ import React,{useEffect,useRef,useState} from 'react';
 import {ArrowUpRight,ArrowDown,ChevronLeft,ChevronRight,Pause,Play,X} from 'lucide-react';
 import {SourcePhoto} from './ActivitySections.jsx';
 import {publishedSlides,mediaForViewport,nextSlideIndex,youtubeEmbedUrl} from './hero-content.js';
+import {getHeroSlides} from './site-content.js';
 function useQuery(query){const [match,setMatch]=useState(()=>window.matchMedia(query).matches);useEffect(()=>{const media=window.matchMedia(query);const change=()=>setMatch(media.matches);media.addEventListener('change',change);return()=>media.removeEventListener('change',change)},[query]);return match}
 function MediaDialog({media,close}){
  const dialog=useRef(null);const embedded=media.type==='youtube'?youtubeEmbedUrl(media.src):null;
@@ -9,7 +10,7 @@ function MediaDialog({media,close}){
  return <dialog ref={dialog} className="media-dialog" aria-label={media.title} onCancel={close} onClick={e=>{if(e.target===e.currentTarget)close()}}><div className="media-dialog-heading"><div><span className="eyebrow">{media.label}</span><h2>{media.title}</h2></div><button className="icon-button" autoFocus aria-label="Close video" onClick={close}><X/></button></div>{media.type==='video'?<video src={media.src} poster={media.thumbnail} controls autoPlay playsInline preload="metadata"/>:embedded?<iframe src={embedded} title={media.title} allow="autoplay; encrypted-media; picture-in-picture" allowFullScreen referrerPolicy="strict-origin-when-cross-origin"/>:<p>This video link is unavailable.</p>}</dialog>
 }
 export default function Hero(){
- const slides=publishedSlides();const [resume,setResume]=useState(false);const [index,setIndex]=useState(0);const [paused,setPaused]=useState(false);const [hover,setHover]=useState(false);const [focus,setFocus]=useState(false);const [hidden,setHidden]=useState(document.hidden);const [covered,setCovered]=useState(false);const [mediaOpen,setMediaOpen]=useState(false);const [videoError,setVideoError]=useState(false);
+ const slides=publishedSlides(getHeroSlides());const [resume,setResume]=useState(false);const [index,setIndex]=useState(0);const [paused,setPaused]=useState(false);const [hover,setHover]=useState(false);const [focus,setFocus]=useState(false);const [hidden,setHidden]=useState(document.hidden);const [covered,setCovered]=useState(false);const [mediaOpen,setMediaOpen]=useState(false);const [videoError,setVideoError]=useState(false);
  const mobile=useQuery('(max-width: 700px)'),reduce=useQuery('(prefers-reduced-motion: reduce)');
  const hero=useRef(null),video=useRef(null),touch=useRef(null),watch=useRef(null);const slide=slides[index];const media=mediaForViewport(slide,mobile);
  const videoStop=paused||hidden||covered||mediaOpen||reduce;

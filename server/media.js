@@ -246,7 +246,18 @@ export async function mediaUsage(pool, id) {
     'SELECT id, content_type, title, status, (featured_media_id = ?) AS is_featured, (social_image_id = ?) AS is_social, (body_html LIKE ? OR CAST(body_json AS CHAR) LIKE ?) AS in_body FROM content_items WHERE deleted_at IS NULL AND (featured_media_id = ? OR social_image_id = ? OR body_html LIKE ? OR CAST(body_json AS CHAR) LIKE ?) ORDER BY id DESC LIMIT 100',
     [id, id, marker, marker, id, id, marker, marker],
   );
-  return rows.map(item => ({kind: 'content', id: Number(item.id), type: item.content_type, title: item.title, status: item.status, as: [Number(item.is_featured) ? 'featured image' : '', Number(item.is_social) ? 'social image' : '', Number(item.in_body) ? 'in the article' : ''].filter(Boolean)}));
+  const used = rows.map(item => ({kind: 'content', id: Number(item.id), type: item.content_type, title: item.title, status: item.status, as: [Number(item.is_featured) ? 'featured image' : '', Number(item.is_social) ? 'social image' : '', Number(item.in_body) ? 'in the article' : ''].filter(Boolean)}));
+  return [...used, ...await siteUsage(pool, marker)];
+}
+
+const siteTitles = {hero: 'Hero slider', homepage: 'Homepage sections'};
+// The homepage and hero keep their images as /media/ID addresses inside their documents, live copy and draft.
+async function siteUsage(pool, marker) {
+  const [rows] = await pool.execute(
+    'SELECT doc_key, (CAST(published_json AS CHAR) LIKE ?) AS live, (CAST(draft_json AS CHAR) LIKE ?) AS draft FROM site_documents WHERE CAST(published_json AS CHAR) LIKE ? OR CAST(draft_json AS CHAR) LIKE ?',
+    [marker, marker, marker, marker],
+  );
+  return rows.map(row => ({kind: 'site', id: row.doc_key, type: 'site', title: siteTitles[row.doc_key] ?? row.doc_key, status: Number(row.live) ? 'live' : 'draft only', as: [Number(row.live) ? 'on the live site' : '', Number(row.draft) ? 'in the draft' : ''].filter(Boolean)}));
 }
 
 export async function mediaInUse(pool, id, storagePath) {
@@ -256,7 +267,8 @@ export async function mediaInUse(pool, id, storagePath) {
     'SELECT id FROM content_items WHERE deleted_at IS NULL AND (featured_media_id = ? OR social_image_id = ? OR body_html LIKE ? OR CAST(body_json AS CHAR) LIKE ?) LIMIT 1',
     [id, id, `%${marker}%`, `%${marker}%`],
   );
-  return Boolean(rows[0]);
+  if (rows[0]) return true;
+  return (await siteUsage(pool, `%${marker}%`)).length > 0;
 }
 
 export async function removeMedia({pool, config, clock, id}) {

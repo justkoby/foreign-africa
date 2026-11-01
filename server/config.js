@@ -13,6 +13,8 @@ export function readConfig(env = process.env) {
     dbMigrateUser: env.DB_MIGRATE_USER || '',
     dbMigratePassword: env.DB_MIGRATE_PASSWORD || '',
     // Shared secret for POST /api/cron/publish. Must be at least 32 characters, or the endpoint stays disabled.
+    // Extra hosts editors may link to from the homepage and hero (comma separated). foreignafrica.org and the site's own host are always allowed.
+    ctaExtraHosts: env.CTA_EXTRA_HOSTS || '',
     cronSecret: String(env.CRON_SECRET || '').length >= 32 ? env.CRON_SECRET : '',
     sessionSecret: env.SESSION_SECRET || '',
     appEnv,

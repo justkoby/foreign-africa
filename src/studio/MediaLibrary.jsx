@@ -120,7 +120,7 @@ function MediaDetails({file, mode, canEditAny, user, onSelect, onChanged, onRemo
       <button type="button" onClick={async () => {await navigator.clipboard?.writeText(new URL(file.url, window.location.origin).toString()); setMessage('Address copied.');}}>Copy address</button>
     </div>
     <h3>Where it is used</h3>
-    {usage === null ? <p className="studio-hint">Checking…</p> : usage.length ? <ul className="ml-usage">{usage.map(use => <li key={use.id}><a href={`#/content/${use.type}/${use.id}`}>{use.title}</a> <small>{use.as.join(', ')} · {use.status}</small></li>)}</ul> : <p className="studio-hint">Not used by any page yet.</p>}
+    {usage === null ? <p className="studio-hint">Checking…</p> : usage.length ? <ul className="ml-usage">{usage.map(use => <li key={`${use.kind}-${use.id}`}><a href={use.kind === 'site' ? `#/site/${use.id}` : `#/content/${use.type}/${use.id}`}>{use.title}</a> <small>{use.as.join(', ')} · {use.status}</small></li>)}</ul> : <p className="studio-hint">Not used by any page yet.</p>}
     {canEditAny && !file.builtIn && <div className="ml-danger"><input ref={replace} type="file" hidden accept={file.kind === 'document' ? 'application/pdf' : 'image/jpeg,image/png,image/webp,image/gif'} onChange={event => event.target.files.length && swap(event.target.files)}/><button type="button" onClick={() => replace.current?.click()}>Replace file</button><button type="button" className="is-danger" disabled={Boolean(usage?.length)} title={usage?.length ? 'Remove it from the pages above first' : ''} onClick={remove}>Delete</button></div>}
     {file.builtIn && <p className="studio-hint">This is a built-in site image. It can be chosen but not replaced or deleted here.</p>}
   </aside>;

@@ -1,9 +1,9 @@
 export const roles = ['super_admin', 'admin', 'editor', 'contributor'];
 
 const grants = {
-  super_admin: ['content.read', 'content.create', 'content.update.any', 'content.publish', 'content.delete', 'users.read', 'users.manage', 'users.assign_super', 'activity.read', 'health.read', 'settings.read', 'legacy.edit', 'submissions.read', 'submissions.manage', 'submissions.export', 'terms.manage'],
-  admin: ['content.read', 'content.create', 'content.update.any', 'content.publish', 'content.delete', 'users.read', 'users.manage', 'activity.read', 'health.read', 'legacy.edit', 'submissions.read', 'submissions.manage', 'submissions.export', 'terms.manage'],
-  editor: ['content.read', 'content.create', 'content.update.any', 'content.publish', 'legacy.edit', 'terms.manage'],
+  super_admin: ['content.read', 'content.create', 'content.update.any', 'content.publish', 'content.delete', 'users.read', 'users.manage', 'users.assign_super', 'activity.read', 'health.read', 'settings.read', 'legacy.edit', 'submissions.read', 'submissions.manage', 'submissions.export', 'terms.manage', 'homepage.edit', 'homepage.publish', 'homepage.manage'],
+  admin: ['content.read', 'content.create', 'content.update.any', 'content.publish', 'content.delete', 'users.read', 'users.manage', 'activity.read', 'health.read', 'legacy.edit', 'submissions.read', 'submissions.manage', 'submissions.export', 'terms.manage', 'homepage.edit', 'homepage.publish', 'homepage.manage'],
+  editor: ['content.read', 'content.create', 'content.update.any', 'content.publish', 'legacy.edit', 'terms.manage', 'homepage.edit'],
   contributor: ['content.read', 'content.create', 'content.update.own'],
 };
 

@@ -22,6 +22,9 @@ Verified on MariaDB 11.8.9 and MySQL 8.0.46, and in a real browser; not deployed
 Done: tables with row/column/header/merge controls; approved YouTube video blocks (id-only storage, server-built embed); managed categories and tags (create, rename, merge, guarded delete, usage counts); a media library with grid/list, multi-file drag-and-drop upload, search, type filter, sort, pagination, title/alt/caption, usage panel, safe replace and safe delete; Gutenberg-style editor layout; scheduling by date and time; publish checklist; SEO preview; autosave; revisions with compare and restore; bulk actions; unsaved-changes guard. Also: token-protected cron endpoint, configurable pool size, separate migration account, a thumbnail-route bug fix and a rename-a-shared-category bug fix.
 Next: the homepage and hero editor (Step 5), on the same content and media infrastructure.
 
+## Homepage and hero editor (2026-11-01): complete; remaining roadmap items listed honestly
+Built and verified; see `docs/cms/HOMEPAGE_EDITOR.md`. Still on the roadmap and **not done**: submit-for-review for contributors, word-level revision comparison, image cropping/focal point, self-hosted video, and media-usage tracking for team, partners and other modules.
+
 ## Open items I need from you
 1. **Antigravity changes**: not on the remote. Push the branch or tell me where it is before I touch overlapping areas (editor, media, admin shell).
 2. **Run `npm test` somewhere with internet** (or provide MySQL 8) so the 3 MySQL suites run. I will not claim database behaviour as verified until then.

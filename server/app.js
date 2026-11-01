@@ -10,6 +10,8 @@ import {createHandler as createDiscoverHandler} from '../api/discover.js';
 import {createHandler as createCmsHandler} from '../api/cms.js';
 import {createCms} from './cms-service.js';
 import {createTerm, deleteTerm, listTerms, updateTerm} from './terms-store.js';
+import * as siteStore from './site-store.js';
+import {injectSiteData} from './site-inject.js';
 import {addNote, exportCsv, getSubmission, listSubmissions, recordSubmission, updateSubmission} from './submissions.js';
 import * as store from './store.js';
 
@@ -54,7 +56,7 @@ function acmeChallenge(token) {
   return '';
 }
 
-export function createApp({config, pool, clock = () => Date.now(), forms}) {
+export function createApp({config, pool, clock = () => Date.now(), forms, shell}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
@@ -525,6 +527,76 @@ export function createApp({config, pool, clock = () => Date.now(), forms}) {
     send(res, 200, {ok: true});
   }));
 
+  // ---- Homepage and hero: draft/publish content areas. Editors change approved fields only; see site-schema.js.
+  app.get('/api/public/site', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    res.setHeader('Cache-Control', 'no-cache');
+    send(res, 200, await siteStore.publishedSite(pool, clock));
+  }));
+
+  app.get('/api/staff/site', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('homepage.edit')(req);
+    const settings = await siteStore.getSettings(pool);
+    send(res, 200, {areas: await siteStore.overview(pool), settings, canPublish: siteStore.canPublish(user, settings), canManage: allows(user.roles, 'homepage.manage')});
+  }));
+
+  // The real site, with the DRAFT content embedded, for the editor's desktop and mobile previews.
+  app.get('/api/staff/site/preview', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    await requireUser('homepage.edit')(req);
+    const html = shell ? shell() : '';
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    res.setHeader('Content-Security-Policy', "frame-ancestors 'self'");
+    if (!html) return send(res, 404, {error: 'Previews need the built site. Run npm run build, then start the server.'});
+    res.type('html').send(injectSiteData(html, await siteStore.draftSite({pool, config})));
+  }));
+
+  app.put('/api/staff/site/settings', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('homepage.manage')(req);
+    send(res, 200, {settings: await siteStore.saveSettings({pool, clock, actor: user, input: req.body ?? {}})});
+  }));
+
+  app.get('/api/staff/site/:key', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('homepage.edit')(req);
+    const settings = await siteStore.getSettings(pool);
+    res.setHeader('Cache-Control', 'no-store');
+    send(res, 200, {...(await siteStore.getDocument({pool, config, key: req.params.key})), canPublish: siteStore.canPublish(user, settings), settings});
+  }));
+
+  app.put('/api/staff/site/:key', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('homepage.edit')(req);
+    send(res, 200, {state: await siteStore.saveDraft({pool, config, clock, actor: user, key: req.params.key, document: req.body?.document, baseVersion: req.body?.baseVersion})});
+  }));
+
+  app.post('/api/staff/site/:key/publish', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('homepage.edit')(req);
+    send(res, 200, {state: await siteStore.publish({pool, config, clock, actor: user, key: req.params.key, baseVersion: req.body?.baseVersion})});
+  }));
+
+  app.post('/api/staff/site/:key/discard', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('homepage.edit')(req);
+    send(res, 200, {state: await siteStore.discardDraft({pool, clock, actor: user, key: req.params.key})});
+  }));
+
+  app.get('/api/staff/site/:key/revisions', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    await requireUser('homepage.edit')(req);
+    send(res, 200, {revisions: await siteStore.listRevisions({pool, key: req.params.key})});
+  }));
+
+  app.post('/api/staff/site/:key/restore', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('homepage.edit')(req);
+    send(res, 200, {state: await siteStore.restoreRevision({pool, config, clock, actor: user, key: req.params.key, revisionId: Number(req.body?.revisionId), baseVersion: req.body?.baseVersion})});
+  }));
+
   app.post('/api/staff/schedule/run', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('content.publish')(req);
@@ -536,7 +608,7 @@ export function createApp({config, pool, clock = () => Date.now(), forms}) {
     const status = error.status || 500;
     const message = status === 500 && config.appEnv !== 'test' ? 'Something went wrong.' : error.message;
     if (status === 500) console.error(error);
-    send(res, status, {error: message});
+    send(res, status, {error: message, ...(error.problems ? {problems: error.problems} : {})});
   });
 
   return app;

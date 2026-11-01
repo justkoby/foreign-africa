@@ -4,8 +4,18 @@ import express from 'express';
 import {createApp} from './app.js';
 import {publicItem} from './content-store.js';
 import {articleRequest, externalRedirect, injectArticle} from './html.js';
+import {injectSiteData} from './site-inject.js';
+import {publishedSite} from './site-store.js';
 
 export async function decorateHtml({pool, config, pathname, html, clock = () => Date.now()}) {
+  // The homepage embeds the PUBLISHED hero and homepage content. With nothing published, the built-in content is used.
+  if ((pathname === '/' || pathname === '/index.html') && pool && html) {
+    try {
+      const published = await publishedSite(pool, clock);
+      if (Object.keys(published).length) return {body: injectSiteData(html, published)};
+    } catch { /* the built-in content renders */ }
+    return null;
+  }
   const request = articleRequest(pathname);
   if (!request || !pool || !html) return null;
   let item = null;
@@ -19,7 +29,8 @@ export async function decorateHtml({pool, config, pathname, html, clock = () => 
 export function createSite({config, pool, dist, clock = () => Date.now()}) {
   const site = express();
   site.disable('x-powered-by');
-  site.use(createApp({config, pool, clock}));
+  const shell = () => { const file = join(dist, 'index.html'); return existsSync(file) ? readFileSync(file, 'utf8') : ''; };
+  site.use(createApp({config, pool, clock, shell}));
   site.use(express.static(dist, {index: false}));
   site.get(/^\/(?!api\/).*/, async (req, res) => {
     const file = join(dist, 'index.html');

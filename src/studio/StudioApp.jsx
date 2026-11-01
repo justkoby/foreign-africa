@@ -5,6 +5,7 @@ import {ContentEditor, ContentList} from './ArticleEditor.jsx';
 import MediaLibrary from './MediaLibrary.jsx';
 import Submissions from './Submissions.jsx';
 import Terms from './Terms.jsx';
+import SiteEditor from './site/SiteEditor.jsx';
 import Legacy from './Legacy.jsx';
 import {confirmLeave, setUnsaved} from './unsaved.js';
 import '@fontsource/inter/latin-400.css';
@@ -13,13 +14,14 @@ import '@fontsource/inter/latin-600.css';
 import './studio.css';
 
 const sections = [['news', 'News'], ['commentary', 'Commentaries'], ['page', 'Pages'], ['programme', 'Programmes']];
-const later = [['Foreign Africa', ['Homepage and hero', 'Partners', 'Policy briefs', 'Opportunities']], ['Website', ['Navigation', 'Redirects']]];
+const later = [['Foreign Africa', ['Partners', 'Policy briefs', 'Opportunities']], ['Website', ['Navigation', 'Redirects']]];
 const legacySections = [['events', 'Events'], ['people', 'People'], ['engage', 'Engage pages'], ['forms', 'Form definitions']];
 export function navigation(user) {
   const can = permission => allows(user.roles, permission);
   return [
     {group: 'Overview', items: [{id: '/', label: 'Dashboard'}]},
     {group: 'Content', items: [...sections.map(([id, label]) => ({id: `/content/${id}`, label})), ...(can('content.read') ? [{id: '/media', label: 'Media library'}] : []), ...(can('terms.manage') ? [{id: '/terms', label: 'Categories and tags'}] : [])]},
+    ...(can('homepage.edit') ? [{group: 'Foreign Africa', items: [{id: '/site/hero', label: 'Hero slider'}, {id: '/site/homepage', label: 'Homepage sections'}]}] : []),
     ...(can('legacy.edit') ? [{group: 'Site content', items: legacySections.filter(([id]) => id !== 'forms').map(([id, label]) => ({id: `/legacy/${id}`, label}))}] : []),
     ...(can('submissions.read') || can('legacy.edit') ? [{group: 'Engagement', items: [...(can('submissions.read') ? [{id: '/submissions', label: 'Submissions'}] : []), ...(can('legacy.edit') ? [{id: '/legacy/forms', label: 'Form definitions'}] : [])]}] : []),
     {group: 'Administration', items: [...(can('users.read') ? [{id: '/users', label: 'Users'}] : []), ...(can('activity.read') ? [{id: '/activity', label: 'Activity'}] : []), ...(can('health.read') ? [{id: '/health', label: 'System health'}] : []), ...(can('settings.read') ? [{id: '/settings', label: 'Settings'}] : []), {id: '/account', label: 'Your account'}]},
@@ -124,6 +126,7 @@ export default function StudioApp() {
   else if (area === 'content' && type) screen = <ContentList type={type} label={sections.find(item => item[0] === type)?.[1] ?? 'Content'} user={session.user}/>;
   else if (area === 'submissions') screen = allows(session.user.roles, 'submissions.read') ? <Submissions user={session.user} api={api} id={type}/> : <p className="studio-alert" role="alert">You do not have permission to view submissions.</p>;
   else if (area === 'legacy') screen = allows(session.user.roles, 'legacy.edit') ? <Legacy section={type} id={id} editable={Boolean(session.legacyFileEditing)}/> : <p className="studio-alert" role="alert">You do not have permission to edit these collections.</p>;
+  else if (area === 'site') screen = allows(session.user.roles, 'homepage.edit') && ['hero', 'homepage'].includes(type) ? <SiteEditor key={type} area={type} user={session.user}/> : <p className="studio-alert" role="alert">You do not have permission to edit the homepage.</p>;
   else if (area === 'terms') screen = allows(session.user.roles, 'terms.manage') ? <Terms user={session.user}/> : <p className="studio-alert" role="alert">You do not have permission to manage categories and tags.</p>;
   else if (area === 'media') screen = allows(session.user.roles, 'content.read') ? <MediaLibrary user={session.user}/> : <p className="studio-alert" role="alert">You do not have permission to view the media library.</p>;
   else if (area === 'users') screen = allows(session.user.roles, 'users.read') ? <Users/> : <p className="studio-alert" role="alert">You do not have permission to view users.</p>;
