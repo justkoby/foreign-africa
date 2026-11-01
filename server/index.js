@@ -4,11 +4,15 @@ import {createPool} from './db.js';
 import {databaseConfigured, readConfig} from './config.js';
 import {createSite} from './site.js';
 import {prepareDatabase} from './prepare.js';
+import {blockingChecks, deploymentChecks} from './deployment-checks.js';
 
 async function start() {
   const config = readConfig();
-  if (config.appEnv === 'staging' && (!config.stagingUser || !config.stagingPassword)) {
-    console.error('Staging requires STAGING_USER and STAGING_PASSWORD.');
+  const checks = deploymentChecks(config);
+  for (const check of checks) if (check.status === 'fail' || check.status === 'warn') console.log(`[${check.status}] ${check.label}: ${check.detail}`);
+  // Staging and production refuse to start with an unsafe setup; development only warns.
+  if ((config.appEnv === 'staging' || config.appEnv === 'production') && blockingChecks(checks).length) {
+    console.error('Not starting: fix the [fail] items above in the hosting environment variables.');
     process.exit(1);
   }
   try {

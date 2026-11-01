@@ -47,14 +47,16 @@ async function startSystemMysql(bin) {
 async function startMariadbDocker() {
   const image = process.env.TEST_MARIADB_IMAGE || 'mariadb:11.8';
   const dbName = `fa_test_${Date.now().toString(36)}`;
-  const run = spawnSync('docker', ['run', '-d', '--rm', '-p', '127.0.0.1::3306', '-e', 'MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=1', '-e', `MARIADB_DATABASE=${dbName}`, image, '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci', ...(process.env.TEST_MARIADB_ARGS ? process.env.TEST_MARIADB_ARGS.split(' ') : [])], {encoding: 'utf8'});
+  const run = spawnSync('docker', ['run', '-d', '--rm', '--tmpfs', '/var/lib/mysql:rw', '-p', '127.0.0.1::3306', '-e', 'MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=1', '-e', `MARIADB_DATABASE=${dbName}`, image, '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci', ...(process.env.TEST_MARIADB_ARGS ? process.env.TEST_MARIADB_ARGS.split(' ') : [])], {encoding: 'utf8'});
   if (run.status !== 0) throw new Error(`docker run failed: ${(run.stderr || '').slice(-300)}`);
   const id = run.stdout.trim();
-  const stop = async () => { spawnSync('docker', ['rm', '-f', id]); };
+  // -v also removes the container's data volume, so test databases never accumulate on disk.
+  const stop = async () => { spawnSync('docker', ['rm', '-f', '-v', id]); };
   const mapped = spawnSync('docker', ['port', id, '3306/tcp'], {encoding: 'utf8'}).stdout.trim().split('\n')[0];
   const port = Number(mapped.split(':').pop());
   let ready = false;
-  for (let attempt = 0; attempt < 120 && !ready; attempt += 1) {
+  // Generous: several suites may start a container at once on a small machine.
+  for (let attempt = 0; attempt < 360 && !ready; attempt += 1) {
     try { const c = await mysql.createConnection({host: '127.0.0.1', port, user: 'root', database: dbName}); const [[v]] = await c.query('SELECT VERSION() AS v'); await c.end(); console.log(`# database under test: ${v.v}`); ready = true; }
     catch { await new Promise(resolve => setTimeout(resolve, 500)); }
   }

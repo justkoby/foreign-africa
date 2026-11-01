@@ -5,10 +5,11 @@ import {join, resolve} from 'node:path';
 import {allows} from './permissions.js';
 import {externalRedirect, renderContentPage, robotsText, sitemapXml} from './html.js';
 import {readCookie, sameSecret, originAllowed, sqlTime} from './text.js';
-import {getMedia, listMedia, mediaRootProblem, mediaUsage, openMedia, readUpload, removeMedia, replaceUpload, saveUpload, updateMedia} from './media.js';
+import {getMedia, listMedia, mediaRootProblem, storageMarker, mediaUsage, openMedia, readUpload, removeMedia, replaceUpload, saveUpload, updateMedia} from './media.js';
 import {createHandler as createDiscoverHandler} from '../api/discover.js';
 import {createHandler as createCmsHandler} from '../api/cms.js';
 import {createCms} from './cms-service.js';
+import {deploymentChecks} from './deployment-checks.js';
 import {createTerm, deleteTerm, listTerms, updateTerm} from './terms-store.js';
 import * as siteStore from './site-store.js';
 import {injectSiteData} from './site-inject.js';
@@ -33,7 +34,12 @@ async function storageCheck(config) {
   if (!existsSync(config.mediaRoot)) return {status: 'failed', detail: 'The media directory does not exist.'};
   try {
     await access(config.mediaRoot, constants.W_OK);
-    return {status: 'ok', detail: 'The media directory is writable.'};
+    try {
+      const marker = await storageMarker(config.mediaRoot);
+      return {status: 'ok', detail: marker.survivedRestart ? `The media directory is writable and survived a restart (marker from ${marker.createdAt}). Uploads persist.` : `The media directory is writable. Persistence is not yet proven: a marker was written ${marker.createdAt}. Redeploy once, then check this page again; it should say the folder survived a restart.`, persistence: marker.survivedRestart ? 'verified' : 'unverified'};
+    } catch {
+      return {status: 'ok', detail: 'The media directory is writable.', persistence: 'unverified'};
+    }
   } catch {
     return {status: 'failed', detail: 'The media directory is not writable.'};
   }
@@ -61,6 +67,9 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
   app.use(express.json({limit: '1mb'}));
+
+  // Anything that is not production must never be indexed, even its error and sign-in responses.
+  if (config.appEnv !== 'production') app.use((req, res, next) => { res.setHeader('X-Robots-Tag', 'noindex, nofollow'); next(); });
 
   app.get('/.well-known/acme-challenge/:token', (req, res) => {
     const body = acmeChallenge(req.params.token);
@@ -313,7 +322,7 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
   app.get('/api/staff/settings', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('settings.read')(req);
-    send(res, 200, {appEnv: config.appEnv, publicSiteUrl: config.publicSiteUrl, mediaConfigured: Boolean(config.mediaRoot), cookieSecure: config.cookieSecure, cronConfigured: Boolean(config.cronSecret), dbConnectionLimit: config.dbConnectionLimit});
+    send(res, 200, {appEnv: config.appEnv, publicSiteUrl: config.publicSiteUrl, mediaConfigured: Boolean(config.mediaRoot), cookieSecure: config.cookieSecure, cronConfigured: Boolean(config.cronSecret), dbConnectionLimit: config.dbConnectionLimit, checks: deploymentChecks(config)});
   }));
 
   app.get('/api/staff/users', route(async (req, res) => {

@@ -18,7 +18,7 @@ Audited 2026-11-01. **Supersedes the first version of this file**, which was wri
 - `npm test`: **66 tests, 63 pass, 0 fail, 3 skipped.** The staging report says 72. The 3 skipped suites are the MySQL-backed ones (`phase2-mysql`, `prepare-database`, `staff-mysql`). They need `mysql-memory-server` to download MySQL from `cdn.mysql.com`, which this sandbox blocks. **I therefore could not independently confirm the migration/seed/permission claims; they are taken from the staging report and code reading.** Run `npm test` on a machine with internet to confirm, or give me a MySQL/MariaDB service.
 - Nothing has been deployed. Hostinger was not contacted.
 
-> **Step 1 update (2026-11-01):** the legacy `/editor` shared-password and file-submission risks described in section 3 have been addressed in code (see roadmap). Disposable MySQL 8.0.46 is now available in this sandbox via `tests/helpers/mysql.js`; the suite has since been run against the Hostinger engine itself, MariaDB 11.8.9 (115 of 115 pass); see `DATABASE_COMPATIBILITY.md`.
+> **Step 1 update (2026-11-01):** the legacy `/editor` shared-password and file-submission risks described in section 3 have been addressed in code (see roadmap). Disposable MySQL 8.0.46 is now available in this sandbox via `tests/helpers/mysql.js`; the suite has since been run against the Hostinger engine itself, MariaDB 11.8.9 (146 of 146 pass); see `DATABASE_COMPATIBILITY.md`.
 
 ## 3. Architecture as it actually is
 

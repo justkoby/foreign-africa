@@ -51,6 +51,21 @@ export function mediaRootProblem(root) {
   return '';
 }
 
+// Evidence that the media folder really survives restarts and redeploys. The first start writes a marker file; a later
+// start (a different process) that still finds it proves the folder is persistent, so uploads are not lost on deploy.
+export async function storageMarker(root, {now = Date.now(), processStart = Date.now() - process.uptime() * 1000} = {}) {
+  const file = join(root, '.fa-storage-marker.json');
+  try {
+    const existing = JSON.parse(await readFile(file, 'utf8'));
+    const created = Date.parse(existing.createdAt);
+    return {createdAt: existing.createdAt, survivedRestart: Number.isFinite(created) && created < processStart};
+  } catch {
+    const createdAt = new Date(now).toISOString();
+    await writeFile(file, JSON.stringify({createdAt, note: 'Written by Foreign Africa to prove this folder survives redeploys. Do not delete.'}));
+    return {createdAt, survivedRestart: false};
+  }
+}
+
 export function insideRoot(root, relative) {
   const base = resolve(root);
   const full = resolve(base, relative);

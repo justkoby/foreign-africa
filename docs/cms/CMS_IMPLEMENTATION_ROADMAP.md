@@ -25,6 +25,9 @@ Next: the homepage and hero editor (Step 5), on the same content and media infra
 ## Homepage and hero editor (2026-11-01): complete; remaining roadmap items listed honestly
 Built and verified; see `docs/cms/HOMEPAGE_EDITOR.md`. Still on the roadmap and **not done**: submit-for-review for contributors, word-level revision comparison, image cropping/focal point, self-hosted video, and media-usage tracking for team, partners and other modules.
 
+## Deployment preparation for a temporary domain (2026-11-01): code and documents ready; nothing deployed
+Self-check at start-up and in Studio Settings (unsafe staging refuses to start), global noindex outside production, upload-persistence proof, cron reachable without the staging password. Exact steps, blockers and acceptance checklist: `HOSTINGER_STAGING_SETUP.md`; moving to the real domain: `CUTOVER_TO_PRODUCTION.md`. Open before cutover: **no redirect engine for WordPress URLs**.
+
 ## Open items I need from you
 1. **Antigravity changes**: not on the remote. Push the branch or tell me where it is before I touch overlapping areas (editor, media, admin shell).
 2. **Run `npm test` somewhere with internet** (or provide MySQL 8) so the 3 MySQL suites run. I will not claim database behaviour as verified until then.
