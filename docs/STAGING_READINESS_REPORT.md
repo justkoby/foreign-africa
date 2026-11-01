@@ -1,5 +1,7 @@
 # Staging readiness report
 
+> **Update 2026-11-01:** `/editor` no longer has its own shared password. It redirects into the Studio (`/admin#/legacy`) and `/api/cms` requires a Studio session with the `legacy.edit` permission. `CMS_PASSWORD` is development-only. Form submissions are stored in MySQL (migration `005`). See `docs/cms/HOSTINGER_REQUIREMENTS.md`.
+
 **Date:** 25 October 2026  
 **Target:** `https://preview.foreignafrica.org` on Hostinger Business Web Hosting  
 **Production:** `https://foreignafrica.org` stays on WordPress  

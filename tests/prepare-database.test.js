@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createDB} from 'mysql-memory-server';
+import {createDisposableMysql} from './helpers/mysql.js';
 import {prepareDatabase} from '../server/prepare.js';
 
 test('startup preparation migrates, bootstraps once, and seeds without duplicates', {timeout: 300000}, async (t) => {
   let database;
   try {
-    database = await createDB({version: '8.4.x'});
+    database = await createDisposableMysql();
   } catch (error) {
     return t.skip(`MySQL 8 could not be started: ${error.message}`);
   }

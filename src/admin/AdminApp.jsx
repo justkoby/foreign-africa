@@ -14,6 +14,9 @@ const sections=[
  ['forms','Forms'],
  ['submissions','Submissions'],
 ];
+// When embedded in the Studio, every in-editor link and hash change stays under #/legacy.
+let hashPrefix='';
+const setHash=next=>{window.location.hash=hashPrefix+next};
 const today=()=>new Date().toISOString().slice(0,10);
 const blanks={
  commentaries:{title:'',summary:'',topic:'Diplomacy',date:today(),authors:'',slug:'',image:'',readMinutes:5,status:'draft',tags:[]},
@@ -55,7 +58,7 @@ export default function AdminApp(){
  if(session===null)return <main className="cms-login"><p className="cms-login-wait">Loading editor…</p></main>;
  if(!session)return <LoginScreen onSuccess={()=>setSession(true)}/>;
  const [section,id]=hash.split('/').filter(Boolean);
- const go=next=>{window.location.hash=next};
+ const go=setHash;
  return <div className="cms"><div className="cms-shell"><aside className="cms-side"><strong>Foreign Africa</strong><a href="#/" aria-current={hash==='/'?'page':undefined}>Dashboard</a>{sections.map(([key,label])=><a key={key} href={`#/${key}`} aria-current={section===key?'page':undefined}>{label}</a>)}<button className="cms-out" onClick={async()=>{await api('/logout',{method:'POST'});setSession(false)}}>Log out</button></aside><main className="cms-main">{section?id?<Editor section={section} id={id} back={()=>go(`/${section}`)}/>:<List section={section} open={item=>go(`/${section}/${item}`)}/>:<Dashboard/>}</main></div></div>;
 }
 function Dashboard(){
@@ -86,7 +89,7 @@ function Editor({section,id,back}){
    if(section==='commentaries')payload.authors=String(item.authors||'').split(',').map(name=>name.trim()).filter(Boolean);
    const saved=await api('/items',{method:'PUT',body:{collection:section,item:payload,blocks:section==='commentaries'?blocks:undefined}});
    setMessage('Saved.');
-   if(creating)window.location.hash=`/${section}/${saved.item.id}`;
+   if(creating)setHash(`/${section}/${saved.item.id}`);
   }catch(reason){setError(reason.message)}
  };
  const href=publicHref(section,item);
@@ -100,3 +103,11 @@ function Editor({section,id,back}){
   <aside className="cms-panel"><h2>Publish</h2>{section!=='engage'&&<Field label="Status"><select value={item.status==='draft'?'draft':'publish'} onChange={set('status')}><option value="publish">Published</option><option value="draft">Draft</option></select></Field>}{section==='commentaries'&&<Field label="Date"><input type="date" value={item.date||''} onChange={set('date')}/></Field>}{section==='commentaries'&&<Field label="Minutes"><input type="number" min="1" value={item.readMinutes||5} onChange={set('readMinutes')}/></Field>}<button className="cms-primary" type="button" onClick={save}>Save</button>{href&&item.status!=='draft'&&<a href={href}>View on site</a>}{!creating&&section!=='engage'&&<button className="cms-quiet" type="button" onClick={async()=>{if(!confirm('Move this out of the editor? The public page will no longer list it.'))return;await api('/items',{method:'DELETE',body:{collection:section,id:item.id}});back()}}>Delete</button>}</aside></div></>;
 }
 function Field({label,children}){return <label className="cms-field"><span>{label}</span>{children}</label>}
+
+// The legacy file collections inside the Studio shell. Authentication, roles and the shell come from the Studio.
+export function LegacyWorkspace({section,id}){
+ hashPrefix='/legacy';
+ useEffect(()=>()=>{hashPrefix=''},[]);
+ const intercept=event=>{const link=event.target.closest?.('a');const href=link?.getAttribute('href')||'';if(href.startsWith('#/')&&!href.startsWith('#/legacy')){event.preventDefault();window.location.hash=`/legacy${href.slice(1)}`}};
+ return <div className="cms cms-embedded" onClick={intercept}><main className="cms-main">{section==='submissions'?<p>Submissions now live in the Studio under Engagement.</p>:section?id?<Editor section={section} id={id} back={()=>setHash(`/${section}`)}/>:<List section={section} open={item=>setHash(`/${section}/${item}`)}/>:<Dashboard/>}</main></div>;
+}

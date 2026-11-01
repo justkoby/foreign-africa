@@ -67,3 +67,6 @@
 .cms-ok{background:#edfaef;color:#1e4620;padding:10px}
 .cms-search{min-height:40px;border:1px solid #8c8f94;padding:8px 12px;min-width:220px}
 @media(max-width:900px){.cms-shell{grid-template-columns:1fr}.cms-side{flex-direction:row;overflow:auto;padding:8px}.cms-side strong,.cms-side .cms-out{display:none}.cms-cards,.cms-editor{grid-template-columns:1fr}.cms-main{padding:16px}}
+
+.cms-embedded{min-height:0;background:transparent}
+.cms-embedded .cms-main{padding:0}

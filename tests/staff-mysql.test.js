@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync, writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {createDB} from 'mysql-memory-server';
+import {createDisposableMysql} from './helpers/mysql.js';
 import {createPool} from '../server/db.js';
 import {migrate, migrationsDirectory} from '../server/migrate.js';
 import {createApp} from '../server/app.js';
@@ -28,7 +28,7 @@ async function call(url, path, {method = 'GET', body, cookie, origin = 'http://1
 test('mysql staff foundation', {timeout: 300000}, async (t) => {
   let database;
   try {
-    database = await createDB({version: '8.4.x'});
+    database = await createDisposableMysql();
   } catch (error) {
     return t.skip(`MySQL 8 could not be started: ${error.message}`);
   }
@@ -40,7 +40,7 @@ test('mysql staff foundation', {timeout: 300000}, async (t) => {
 
   await t.test('migrations apply once and a failed migration is not recorded', async () => {
     const first = await migrate({pool, directory: migrationsDirectory});
-    assert.equal(first.length, 4);
+    assert.equal(first.length, 5);
     assert.deepEqual(await migrate({pool, directory: migrationsDirectory}), []);
     const [roles] = await pool.execute('SELECT COUNT(*) AS n FROM roles');
     assert.equal(Number(roles[0].n), 4);

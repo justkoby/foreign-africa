@@ -165,8 +165,8 @@ export async function listContent(pool, {type, status, q, includeDrafts, page = 
   const where = ['c.deleted_at IS NULL'];
   const params = [];
   if (!includeDrafts) {
-    where.push("c.status = 'published' AND (c.published_at IS NULL OR c.published_at <= ?)");
-    params.push(sqlTime(clock()));
+    where.push(publicCondition);
+    params.push(sqlTime(clock()), sqlTime(clock()));
   }
   if (type) {
     if (!types.has(type)) throw fail(400, 'Unknown content type.');
@@ -287,13 +287,26 @@ export async function restoreRevision({pool, clock, actor, contentId, revisionId
   return item;
 }
 
+// A scheduled item whose time has passed is public immediately, whether or not anything has promoted it yet.
+// This is what makes scheduled publishing safe on hosting without a background worker; cron only tidies the status.
+const publicCondition = "((c.status = 'published' AND (c.published_at IS NULL OR c.published_at <= ?)) OR (c.status = 'scheduled' AND c.published_at IS NOT NULL AND c.published_at <= ?))";
+const lastPromotion = new WeakMap();
+
+// Called opportunistically by requests. At most one UPDATE per minute per pool; failures never break the request.
+export async function promoteDue(pool, clock, everyMs = 60000) {
+  const now = clock();
+  if (now - (lastPromotion.get(pool) ?? -Infinity) < everyMs) return 0;
+  lastPromotion.set(pool, now);
+  try { return await promoteScheduled(pool, clock); } catch { return 0; }
+}
+
 export async function promoteScheduled(pool, clock) {
   const [result] = await pool.execute("UPDATE content_items SET status = 'published', updated_at = ? WHERE status = 'scheduled' AND deleted_at IS NULL AND published_at <= ?", [sqlTime(clock()), sqlTime(clock())]);
   return result.affectedRows ?? 0;
 }
 
 export async function publicItem(pool, type, slug, clock = () => Date.now()) {
-  const [item] = await load(pool, "c.content_type = ? AND c.slug = ? AND c.deleted_at IS NULL AND c.status = 'published' AND (c.published_at IS NULL OR c.published_at <= ?)", [type, slug, sqlTime(clock())]);
+  const [item] = await load(pool, `c.content_type = ? AND c.slug = ? AND c.deleted_at IS NULL AND ${publicCondition}`, [type, slug, sqlTime(clock()), sqlTime(clock())]);
   return item ?? null;
 }
 

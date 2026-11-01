@@ -3,6 +3,9 @@ import {databaseConfigured} from './config.js';
 import {migrate, migrationsDirectory} from './migrate.js';
 import {provisionAdmin} from './store.js';
 import {seedCatalogue} from './seed-content.js';
+import {createCms, projectRoot} from './cms-service.js';
+import {importLegacySubmissions} from './submissions.js';
+import {join} from 'node:path';
 
 export async function prepareDatabase(config, env = process.env) {
   if (env.PREPARE_DATABASE !== '1') return {ran: false};
@@ -25,6 +28,8 @@ export async function prepareDatabase(config, env = process.env) {
         else throw error;
       }
     }
+    const moved = await importLegacySubmissions({pool, clock: () => Date.now(), secret: config.sessionSecret, file: join(projectRoot, 'data', 'cms', 'submissions.json'), forms: createCms({env: {}}).list('forms') ?? []});
+    if (moved.imported || moved.skipped || moved.missingForm) console.log(`Legacy submissions: imported ${moved.imported}, already present ${moved.skipped}, unknown form ${moved.missingForm}.`);
     const [users] = await pool.execute("SELECT users.id FROM users JOIN user_roles ON user_roles.user_id = users.id JOIN roles ON roles.id = user_roles.role_id WHERE roles.role_key = 'super_admin' AND users.deleted_at IS NULL ORDER BY users.id LIMIT 1");
     if (!users[0]) {
       console.log('Seed skipped until a super administrator exists.');

@@ -1,3 +1,4 @@
+:root{--fa-navy:#071c30;--fa-navy-2:#143e69;--fa-gold:#e2b34a;--fa-text:#1d2327;--fa-muted:#5a6572;--fa-line:#dcdcde;--fa-surface:#fff;--fa-radius:4px;--fa-focus:0 0 0 2px #fff,0 0 0 4px #2271b1}
 .studio-login{min-height:100vh;display:grid;align-content:center;justify-items:center;gap:18px;padding:32px 16px;background:#e7e7e7;color:#111;font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
 .studio-chip,.studio-brand{display:flex;align-items:center;gap:8px}
 .studio-chip{margin:0;padding:6px 16px 6px 6px;background:#fff;border-radius:999px;box-shadow:0 8px 24px #00000014}
@@ -68,3 +69,46 @@
 .studio-cards{grid-template-columns:1fr 1fr}
 .studio-editor{grid-template-columns:1fr}
 }
+
+.studio a:focus-visible,.studio button:focus-visible,.studio input:focus-visible,.studio select:focus-visible,.studio textarea:focus-visible{outline:none;box-shadow:var(--fa-focus)}
+.studio-main>header{display:flex;align-items:center;gap:12px;min-height:48px;padding:0 20px;margin-bottom:20px;background:var(--fa-surface);border-bottom:1px solid var(--fa-line)}
+.studio-main>header>span{margin-left:auto;font-size:13px;font-weight:500}
+.studio-main>header>em{font-style:normal;font-size:12px;color:var(--fa-muted);text-transform:capitalize}
+.studio-crumbs ol{display:flex;flex-wrap:wrap;gap:0;margin:0;padding:0;list-style:none;font-size:13px;color:var(--fa-muted)}
+.studio-crumbs li+li::before{content:'/';margin:0 8px;color:#a7aaad}
+.studio-crumbs li[aria-current=page]{color:var(--fa-text);font-weight:500}
+.studio-crumbs a{color:#2271b1;text-decoration:none}
+.studio aside nav>div{margin-bottom:6px}
+.studio aside nav>div>span:first-child{display:block;text-transform:uppercase;letter-spacing:.06em;font-size:11px;font-weight:600;color:#9fb0c1;margin:14px 0 4px}
+.studio aside a{font-size:14px;padding:7px 10px;border-radius:var(--fa-radius);margin:0 -10px}
+.studio aside a:hover{background:rgba(255,255,255,.08)}
+.studio aside a[aria-current=page]{background:rgba(226,179,74,.14);color:var(--fa-gold)}
+.studio-hint{font-size:13px;color:var(--fa-muted);margin:6px 0 14px;max-width:70ch}
+.studio-empty{color:var(--fa-muted);padding:18px 0}
+.studio-filters{display:flex;flex-wrap:wrap;gap:14px;align-items:end;margin-bottom:14px}
+.studio-filters label,.studio-columns aside label{display:grid;gap:4px;font-size:13px;font-weight:500}
+.studio-filters .studio-check{display:flex;align-items:center;gap:6px;font-weight:400}
+.studio-main input,.studio-main select,.studio-main textarea{font:inherit;font-size:14px;border:1px solid #8c8f94;border-radius:var(--fa-radius);padding:6px 8px;background:#fff;color:var(--fa-text)}
+.studio-table{width:100%;border-collapse:collapse;background:var(--fa-surface);border:1px solid var(--fa-line);font-size:14px}
+.studio-table th{text-align:left;font-size:12px;font-weight:600;color:var(--fa-muted);padding:10px 12px;border-bottom:1px solid var(--fa-line);background:#f6f7f7}
+.studio-table td{padding:10px 12px;border-bottom:1px solid #f0f0f1;vertical-align:top}
+.studio-table tr:hover td{background:#f6f7f7}
+.studio-badge{display:inline-block;font-size:12px;font-weight:500;padding:2px 8px;border-radius:999px;background:#f0f0f1}
+.studio-badge.is-new{background:#e5f0fa;color:#0a4b78}.studio-badge.is-in_review{background:#fcf0d4;color:#6b4800}.studio-badge.is-actioned{background:#e3f4e8;color:#14532d}
+.studio-columns{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px;align-items:start}
+.studio-columns section,.studio-columns aside{background:var(--fa-surface);border:1px solid var(--fa-line);padding:16px}
+.studio-columns h2{font-size:15px;margin:0 0 10px}
+.studio-answers{margin:0}.studio-answers dt{font-size:12px;font-weight:600;color:var(--fa-muted);margin-top:12px}.studio-answers dd{margin:2px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.studio-notes{list-style:none;margin:0 0 12px;padding:0}.studio-notes li{border-top:1px solid #f0f0f1;padding:8px 0}.studio-notes p{margin:4px 0 0;white-space:pre-wrap}
+@media (max-width:900px){.studio-columns{grid-template-columns:1fr}.studio-main>header{padding:0 12px}}
+/* The public stylesheet is global; keep admin headings in the admin typeface. */
+.studio h1,.studio h2,.studio h3,.studio-login h1,.cms h1,.cms h2,.cms h3{font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;letter-spacing:0;font-weight:600;line-height:1.25;text-transform:none}
+.studio h1,.cms h1{font-size:24px;margin:8px 0 12px}
+.studio h2,.cms h2{font-size:16px}
+.studio{grid-template-columns:240px minmax(0,1fr)}
+.studio-main{min-width:0;padding:0 0 32px}
+.studio-main>*:not(header){margin-left:20px;margin-right:20px}
+.studio-main input,.studio-main select,.studio-main textarea{max-width:100%}
+@media (min-width:901px){.studio-menu{display:none!important}}
+@media (max-width:900px){.studio-main table{display:block;max-width:100%;overflow-x:auto}}
+@media (max-width:900px){.studio-main>*:not(header){margin-left:12px;margin-right:12px}}

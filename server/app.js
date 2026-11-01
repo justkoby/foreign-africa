@@ -8,6 +8,8 @@ import {readCookie, sameSecret, originAllowed, sqlTime} from './text.js';
 import {listMedia, mediaRootProblem, openMedia, readUpload, removeMedia, saveUpload, updateMediaAlt} from './media.js';
 import {createHandler as createDiscoverHandler} from '../api/discover.js';
 import {createHandler as createCmsHandler} from '../api/cms.js';
+import {createCms} from './cms-service.js';
+import {addNote, exportCsv, getSubmission, listSubmissions, recordSubmission, updateSubmission} from './submissions.js';
 import * as store from './store.js';
 
 const cookieName = 'fa_staff';
@@ -51,7 +53,7 @@ function acmeChallenge(token) {
   return '';
 }
 
-export function createApp({config, pool, clock = () => Date.now()}) {
+export function createApp({config, pool, clock = () => Date.now(), forms}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
@@ -81,13 +83,7 @@ export function createApp({config, pool, clock = () => Date.now()}) {
   });
 
   const discover = createDiscoverHandler();
-  const cms = createCmsHandler();
   app.post('/api/discover', (req, res, next) => { Promise.resolve(discover(req, res)).catch(next); });
-  app.use('/api/cms', (req, res, next) => {
-    if (!req.url.startsWith('/api/cms')) req.url = `/api/cms${req.url.startsWith('/') ? req.url : `/${req.url}`}`;
-    Promise.resolve(cms(req, res)).catch(next);
-  });
-
   const route = handler => (req, res, next) => Promise.resolve(handler(req, res)).catch(next);
 
   async function actor(req) {
@@ -120,6 +116,48 @@ export function createApp({config, pool, clock = () => Date.now()}) {
     return true;
   }
 
+  const legacyForms = createCms({env: {}});
+  const submitBuckets = new Map();
+
+  // Public form submission: validated on the server, stored privately in MySQL, never written to the deploy tree.
+  app.post('/api/cms/submit', route(async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!pool || !config.sessionSecret) return send(res, 503, {error: 'The enquiry could not be saved.'});
+    if (!originAllowed(req.headers.origin, config, req.headers.host)) return send(res, 403, {error: 'This request was rejected.'});
+    const now = clock();
+    for (const [key, value] of submitBuckets) if (now - value.start >= 60000) submitBuckets.delete(key);
+    const bucket = submitBuckets.get(req.ip) ?? {start: now, count: 0};
+    if (bucket.count >= 10 || (!submitBuckets.has(req.ip) && submitBuckets.size >= 5000)) { res.setHeader('Retry-After', '60'); return send(res, 429, {error: 'Wait a minute, then try again.'}); }
+    bucket.count += 1; submitBuckets.set(req.ip, bucket);
+    const form = ((forms ? forms() : legacyForms.list('forms')) ?? []).find(item => item.id === req.body?.formId && item.status === 'publish');
+    if (!form) return send(res, 404, {error: 'This form is not open.'});
+    try {
+      const result = await recordSubmission({pool, clock, secret: config.sessionSecret, form, answers: req.body?.answers, key: typeof req.body?.key === 'string' ? req.body.key.slice(0, 100) : '', ip: req.ip});
+      send(res, 200, {ok: true, reference: result.reference, success: result.success});
+    } catch (error) {
+      if (error.errors) return send(res, 400, {error: error.message, errors: error.errors});
+      throw error;
+    }
+  }));
+
+  // Everything else under /api/cms (the file collections) needs a Studio session and the legacy.edit permission.
+  const cms = createCmsHandler({
+    allowWrites: config.legacyFileEditing,
+    authorize: async req => {
+      if (!pool || !config.sessionSecret) return 401;
+      let user;
+      try { user = await actor(req); } catch { return 401; }
+      if (!user) return 401;
+      if (!allows(user.roles, 'legacy.edit')) return 403;
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && !originAllowed(req.headers.origin, config, req.headers.host)) return 403;
+      return 200;
+    },
+  });
+  app.use('/api/cms', (req, res, next) => {
+    if (!req.url.startsWith('/api/cms')) req.url = `/api/cms${req.url.startsWith('/') ? req.url : `/${req.url}`}`;
+    Promise.resolve(cms(req, res)).catch(next);
+  });
+
   app.get('/robots.txt', (req, res) => {
     res.type('text/plain').send(robotsText(config));
   });
@@ -143,6 +181,7 @@ export function createApp({config, pool, clock = () => Date.now()}) {
 
   app.get('/api/public/content', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
+    await store.promoteDue(pool, clock);
     const listed = await store.listContent(pool, {type: req.query.type, q: req.query.q, includeDrafts: false, page: req.query.page, pageSize: req.query.pageSize, sort: 'published', clock});
     send(res, 200, {...listed, items: listed.items.map(store.publicView)});
   }));
@@ -186,7 +225,7 @@ export function createApp({config, pool, clock = () => Date.now()}) {
   app.get('/api/staff/session', route(async (req, res) => {
     if (!pool || !config.sessionSecret) return send(res, 200, {user: null, configured: false});
     try {
-      send(res, 200, {user: await actor(req), configured: true});
+      send(res, 200, {user: await actor(req), configured: true, legacyFileEditing: Boolean(config.legacyFileEditing)});
     } catch {
       send(res, 200, {user: null, configured: true, error: 'The staff database is not reachable.'});
     }
@@ -195,6 +234,7 @@ export function createApp({config, pool, clock = () => Date.now()}) {
   app.get('/api/staff/dashboard', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('content.read')(req);
+    await store.promoteDue(pool, clock);
     const counts = await store.dashboard(pool);
     let database = 'ok';
     try { await store.databaseReachable(pool); } catch { database = 'failed'; }
@@ -259,6 +299,7 @@ export function createApp({config, pool, clock = () => Date.now()}) {
   app.get('/api/staff/content', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('content.read')(req);
+    await store.promoteDue(pool, clock);
     send(res, 200, await store.listContent(pool, {type: req.query.type, status: req.query.status, q: req.query.q, includeDrafts: true, page: req.query.page, pageSize: req.query.pageSize, sort: req.query.sort, clock}));
   }));
 
@@ -351,6 +392,43 @@ export function createApp({config, pool, clock = () => Date.now()}) {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('content.read')(req);
     send(res, 200, {item: await store.restoreRevision({pool, clock, actor: user, contentId: Number(req.params.id), revisionId: Number(req.body?.revisionId)})});
+  }));
+
+  app.get('/api/staff/submissions', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('submissions.read')(req);
+    send(res, 200, await listSubmissions({pool, clock, actor: user, status: req.query.status, form: req.query.form, mine: req.query.mine === '1', page: req.query.page, pageSize: req.query.pageSize}));
+  }));
+
+  app.get('/api/staff/submissions.csv', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('submissions.export')(req);
+    const csv = await exportCsv({pool, clock, actor: user, status: req.query.status, form: req.query.form});
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="submissions.csv"');
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(csv);
+  }));
+
+  app.get('/api/staff/submissions/:id', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('submissions.read')(req);
+    res.setHeader('Cache-Control', 'no-store');
+    send(res, 200, {item: await getSubmission({pool, clock, actor: user, id: Number(req.params.id)})});
+  }));
+
+  app.patch('/api/staff/submissions/:id', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('submissions.manage')(req);
+    await updateSubmission({pool, clock, actor: user, id: Number(req.params.id), input: req.body ?? {}});
+    send(res, 200, {item: await getSubmission({pool, clock, actor: user, id: Number(req.params.id)})});
+  }));
+
+  app.post('/api/staff/submissions/:id/notes', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('submissions.manage')(req);
+    await addNote({pool, clock, actor: user, id: Number(req.params.id), note: req.body?.note});
+    send(res, 201, {item: await getSubmission({pool, clock, actor: user, id: Number(req.params.id)})});
   }));
 
   app.post('/api/staff/schedule/run', route(async (req, res) => {

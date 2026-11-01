@@ -8,6 +8,15 @@ Base: `staging` + this branch. Architecture retained: Express 4, MySQL, Tiptap, 
 - Inter for `/admin` and `/editor` only; public Mark Pro untouched and browser-verified.
 - This documentation set corrected.
 
+## Step 1 status (2026-11-01): implemented, MySQL-verified on 8.0.46 only, not deployed
+- `/api/cms` and `/editor` consolidated into the Studio: Studio session + `legacy.edit` role; shared password and file submissions retired on the Express server (410).
+- Legacy file collections embedded under `/admin#/legacy/...`; writes disabled in staging/production unless `LEGACY_FILE_EDITING=1` (they are build-time files and would be lost on redeploy).
+- Submissions moved to MySQL (migration `005`): server-side validation, dedupe, rate limit, statuses, assignment (administrators only), notes, CSV export with formula defusing, audit log without personal data, idempotent import of any old `submissions.json`.
+- Scheduled publishing works without a worker (query-time visibility + throttled promotion); cron optional.
+- `server/backup.js` now includes forms/submissions/notes (previously omitted) and accepts file-serialized dumps.
+- Studio navigation grouped, breadcrumbs, responsive fixes, admin-only heading typography.
+- Remaining for the legacy collections: migrate events, people, engage pages and form definitions themselves into MySQL with runtime public APIs (Steps 5–7). Until then they are a build-time workflow.
+
 ## Open items I need from you
 1. **Antigravity changes**: not on the remote. Push the branch or tell me where it is before I touch overlapping areas (editor, media, admin shell).
 2. **Run `npm test` somewhere with internet** (or provide MySQL 8) so the 3 MySQL suites run. I will not claim database behaviour as verified until then.

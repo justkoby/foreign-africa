@@ -1,9 +1,9 @@
 export const roles = ['super_admin', 'admin', 'editor', 'contributor'];
 
 const grants = {
-  super_admin: ['content.read', 'content.create', 'content.update.any', 'content.publish', 'content.delete', 'users.read', 'users.manage', 'users.assign_super', 'activity.read', 'health.read', 'settings.read'],
-  admin: ['content.read', 'content.create', 'content.update.any', 'content.publish', 'content.delete', 'users.read', 'users.manage', 'activity.read', 'health.read'],
-  editor: ['content.read', 'content.create', 'content.update.any', 'content.publish'],
+  super_admin: ['content.read', 'content.create', 'content.update.any', 'content.publish', 'content.delete', 'users.read', 'users.manage', 'users.assign_super', 'activity.read', 'health.read', 'settings.read', 'legacy.edit', 'submissions.read', 'submissions.manage', 'submissions.export'],
+  admin: ['content.read', 'content.create', 'content.update.any', 'content.publish', 'content.delete', 'users.read', 'users.manage', 'activity.read', 'health.read', 'legacy.edit', 'submissions.read', 'submissions.manage', 'submissions.export'],
+  editor: ['content.read', 'content.create', 'content.update.any', 'content.publish', 'legacy.edit'],
   contributor: ['content.read', 'content.create', 'content.update.own'],
 };
 

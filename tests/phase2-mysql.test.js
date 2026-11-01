@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtempSync, copyFileSync, mkdirSync, existsSync, writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {createDB} from 'mysql-memory-server';
+import {createDisposableMysql} from './helpers/mysql.js';
 import {createPool} from '../server/db.js';
 import {migrate, migrationsDirectory} from '../server/migrate.js';
 import {createApp} from '../server/app.js';
@@ -33,8 +33,8 @@ test('phase 2 content, media, seed, and restore', {timeout: 300000}, async (t) =
   let database;
   let restored;
   try {
-    database = await createDB({version: '8.4.x'});
-    restored = await createDB({version: '8.4.x'});
+    database = await createDisposableMysql();
+    restored = await createDisposableMysql();
   } catch (error) {
     return t.skip(`MySQL 8 could not be started: ${error.message}`);
   }

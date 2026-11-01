@@ -7,16 +7,20 @@ async function readBody(req,limit){
  if(raw.length>limit)throw Object.assign(new Error('large'),{status:413});
  return raw?JSON.parse(raw):{};
 }
-export function createHandler({env=process.env,root,clock=Date.now,limits=buckets}={}){
+// authorize(req) -> 200 | 401 | 403 replaces the shared password with the Studio session (used by the Express server).
+// allowWrites=false makes the file collections read-only. onSubmit is unused here: the server handles /submit itself.
+export function createHandler({env=process.env,root,clock=Date.now,limits=buckets,authorize,allowWrites=true}={}){
  const cms=createCms({root,env,clock});
  return async function handler(req,res){
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');
   const url=new URL(req.url||'/',`http://${req.headers?.host||'localhost'}`);
   const path=url.pathname.replace(/^\/api\/cms/,'').replace(/\/$/,'')||'/';
-  const authed=cms.session(req.headers?.cookie||'');
-  const limit=(name,max)=>{const now=clock();for(const [key,value]of limits)if(now-value.start>=60000)limits.delete(key);const bucket=limits.get(name)??{start:now,count:0};if(bucket.count>=max)return false;bucket.count++;limits.set(name,bucket);return true};
+    const limit=(name,max)=>{const now=clock();for(const [key,value]of limits)if(now-value.start>=60000)limits.delete(key);const bucket=limits.get(name)??{start:now,count:0};if(bucket.count>=max)return false;bucket.count++;limits.set(name,bucket);return true};
   try{
+   const access=authorize?await authorize(req):(cms.session(req.headers?.cookie||'')?200:401);
+   const authed=access===200;
    if(path==='/session'&&req.method==='GET')return res.status(200).json({ok:authed});
+   if(authorize&&(path==='/login'||path==='/logout'||path==='/submit'||path==='/submissions'))return res.status(410).json({error:'This moved into the Studio. Sign in at /admin.'});
    if(path==='/login'&&req.method==='POST'){
     if(!cms.password())return res.status(503).json({error:'Set CMS_PASSWORD in .env.local, then restart the site.'});
     if(!limit('login',8))return res.status(429).json({error:'Wait a minute, then try again.'});
@@ -33,7 +37,9 @@ export function createHandler({env=process.env,root,clock=Date.now,limits=bucket
     const result=cms.submit(body.formId,body.answers,body.key);
     return res.status(result.status??200).json(result);
    }
+   if(access===403)return res.status(403).json({error:'You do not have permission to do that.'});
    if(!authed)return res.status(401).json({error:'Sign in to continue.'});
+   if(!allowWrites&&['PUT','DELETE','POST','PATCH'].includes(req.method))return res.status(403).json({error:'These collections are saved as files and bundled at build time, so they are read-only on this server. Ask a developer to enable LEGACY_FILE_EDITING for local work.'});
    const article=path.match(/^\/article\/([a-z0-9-]+)$/);
    if(article&&req.method==='GET'){const found=cms.readArticle(article[1]);return res.status(200).json(found??{id:article[1],content:[{tag:'p',children:['']}]})}
    if(path==='/submissions'&&req.method==='GET')return res.status(200).json(cms.submissions());

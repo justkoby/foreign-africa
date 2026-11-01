@@ -3,13 +3,39 @@ import {Eye, EyeOff, Menu} from 'lucide-react';
 import {allows} from '../../server/permissions.js';
 import {ContentEditor, ContentList} from './ArticleEditor.jsx';
 import MediaLibrary from './MediaLibrary.jsx';
+import Submissions from './Submissions.jsx';
+import Legacy from './Legacy.jsx';
 import '@fontsource/inter/latin-400.css';
 import '@fontsource/inter/latin-500.css';
 import '@fontsource/inter/latin-600.css';
 import './studio.css';
 
 const sections = [['news', 'News'], ['commentary', 'Commentaries'], ['page', 'Pages'], ['programme', 'Programmes']];
-const later = [['Content', ['Events', 'Publications']], ['Organization', ['Team', 'Partners']], ['Engagement', ['Opportunities', 'Forms', 'Submissions']], ['Website', ['Homepage', 'Navigation', 'Redirects']]];
+const later = [['Foreign Africa', ['Homepage and hero', 'Partners', 'Policy briefs', 'Opportunities']], ['Website', ['Navigation', 'Redirects']]];
+const legacySections = [['events', 'Events'], ['people', 'People'], ['engage', 'Engage pages'], ['forms', 'Form definitions']];
+export function navigation(user) {
+  const can = permission => allows(user.roles, permission);
+  return [
+    {group: 'Overview', items: [{id: '/', label: 'Dashboard'}]},
+    {group: 'Content', items: [...sections.map(([id, label]) => ({id: `/content/${id}`, label})), ...(can('content.read') ? [{id: '/media', label: 'Media library'}] : [])]},
+    ...(can('legacy.edit') ? [{group: 'Site content', items: legacySections.filter(([id]) => id !== 'forms').map(([id, label]) => ({id: `/legacy/${id}`, label}))}] : []),
+    ...(can('submissions.read') || can('legacy.edit') ? [{group: 'Engagement', items: [...(can('submissions.read') ? [{id: '/submissions', label: 'Submissions'}] : []), ...(can('legacy.edit') ? [{id: '/legacy/forms', label: 'Form definitions'}] : [])]}] : []),
+    {group: 'Administration', items: [...(can('users.read') ? [{id: '/users', label: 'Users'}] : []), ...(can('activity.read') ? [{id: '/activity', label: 'Activity'}] : []), ...(can('health.read') ? [{id: '/health', label: 'System health'}] : []), ...(can('settings.read') ? [{id: '/settings', label: 'Settings'}] : []), {id: '/account', label: 'Your account'}]},
+  ];
+}
+export function breadcrumbs(user, hash) {
+  const groups = navigation(user);
+  const path = '/' + hash.split('/').filter(Boolean).join('/');
+  let best = null;
+  for (const group of groups) for (const item of group.items) if (item.id !== '/' && (path === item.id || path.startsWith(`${item.id}/`)) && (!best || item.id.length > best.item.id.length)) best = {group, item};
+  const trail = [{label: 'Dashboard', href: '#/'}];
+  if (!best) return path === '/' ? [{label: 'Dashboard'}] : trail;
+  if (best.group.group !== 'Overview') trail.push({label: best.group.group});
+  const tail = path.slice(best.item.id.length).split('/').filter(Boolean);
+  trail.push(tail.length ? {label: best.item.label, href: `#${best.item.id}`} : {label: best.item.label});
+  if (tail.length) trail.push({label: tail[0] === 'new' ? 'Add new' : 'Edit'});
+  return trail;
+}
 
 async function api(path, options = {}) {
   const response = await fetch(path, {credentials: 'same-origin', headers: {'Content-Type': 'application/json'}, ...options, body: options.body === undefined ? undefined : JSON.stringify(options.body)});
@@ -28,9 +54,14 @@ function LoginScreen({onSuccess, notice}) {
 
 function Shell({user, hash, setHash, children, onLogout}) {
   const [open, setOpen] = useState(false);
-  const go = next => {window.location.hash = next; setHash(next); setOpen(false);};
-  const link = (id, label) => <a href={`#${id}`} aria-current={hash === id || hash.startsWith(`${id}/`) ? 'page' : undefined} onClick={() => setOpen(false)}>{label}</a>;
-  return <div className="studio"><aside className={open ? 'is-open' : ''}><strong>Foreign Africa</strong><p>Content studio</p><nav><span>Overview</span>{link('/', 'Dashboard')}<span>Content</span>{sections.map(([id, label]) => link(`/content/${id}`, label))}{allows(user.roles, 'content.read') && link('/media', 'Media library')}{later.map(([group, items]) => <div key={group}><span>{group}</span>{items.map(item => <span className="studio-later" key={item}>{item}<small>Not in this release</small></span>)}</div>)}<span>Administration</span>{allows(user.roles, 'users.read') && link('/users', 'Users')}{allows(user.roles, 'activity.read') && link('/activity', 'Activity')}{allows(user.roles, 'health.read') && link('/health', 'System health')}{allows(user.roles, 'settings.read') && link('/settings', 'Settings')}{link('/account', 'Your account')}</nav><button type="button" onClick={onLogout}>Log out</button></aside><div className="studio-main"><header><button type="button" className="studio-menu" aria-label="Open menu" onClick={() => setOpen(value => !value)}><Menu size={20}/></button><span>{user.name}</span><em>{user.role.replaceAll('_', ' ')}</em></header>{children}</div></div>;
+  const link = (id, label) => <a key={id} href={`#${id}`} aria-current={hash === id || hash.startsWith(`${id}/`) ? 'page' : undefined} onClick={() => setOpen(false)}>{label}</a>;
+  const crumbs = breadcrumbs(user, hash);
+  return <div className="studio"><aside className={open ? 'is-open' : ''} aria-label="Studio"><strong>Foreign Africa</strong><p>Content studio</p><nav aria-label="Main">
+    {navigation(user).map(group => <div key={group.group}><span>{group.group}</span>{group.items.map(item => link(item.id, item.label))}</div>)}
+    {later.map(([group, items]) => <div key={group}><span>{group}</span>{items.map(item => <span className="studio-later" key={item}>{item}<small>Not in this release</small></span>)}</div>)}
+  </nav><button type="button" onClick={onLogout}>Log out</button></aside><div className="studio-main"><header><button type="button" className="studio-menu" aria-label="Open menu" onClick={() => setOpen(value => !value)}><Menu size={20}/></button>
+    <nav className="studio-crumbs" aria-label="Breadcrumb"><ol>{crumbs.map((crumb, index) => <li key={index} aria-current={index === crumbs.length - 1 ? 'page' : undefined}>{crumb.href && index < crumbs.length - 1 ? <a href={crumb.href}>{crumb.label}</a> : crumb.label}</li>)}</ol></nav>
+    <span>{user.name}</span><em>{user.role.replaceAll('_', ' ')}</em></header>{children}</div></div>;
 }
 
 function Dashboard() {
@@ -79,6 +110,8 @@ export default function StudioApp() {
   let screen = <Dashboard/>;
   if (area === 'content' && type && id) screen = <ContentEditor type={type} id={id} user={session.user}/>;
   else if (area === 'content' && type) screen = <ContentList type={type} label={sections.find(item => item[0] === type)?.[1] ?? 'Content'} user={session.user}/>;
+  else if (area === 'submissions') screen = allows(session.user.roles, 'submissions.read') ? <Submissions user={session.user} api={api} id={type}/> : <p className="studio-alert" role="alert">You do not have permission to view submissions.</p>;
+  else if (area === 'legacy') screen = allows(session.user.roles, 'legacy.edit') ? <Legacy section={type} id={id} editable={Boolean(session.legacyFileEditing)}/> : <p className="studio-alert" role="alert">You do not have permission to edit these collections.</p>;
   else if (area === 'media') screen = allows(session.user.roles, 'content.read') ? <MediaLibrary/> : <p className="studio-alert" role="alert">You do not have permission to view the media library.</p>;
   else if (area === 'users') screen = allows(session.user.roles, 'users.read') ? <Users/> : <p className="studio-alert" role="alert">You do not have permission to view users.</p>;
   else if (area === 'activity') screen = <Plain title="Activity" path="/api/staff/activity" render={data => data.activity.length ? <ul>{data.activity.map(item => <li key={item.id}>{item.action}</li>)}</ul> : <p>No activity yet.</p>}/>;

@@ -15,6 +15,10 @@ export function readConfig(env = process.env) {
     stagingPassword: env.STAGING_PASSWORD || '',
     passwordCost: Number(env.PASSWORD_COST || (appEnv === 'test' ? 4 : 12)),
     sessionDays: 7,
+    // The legacy file collections (events, people, engage, forms) are bundled into the public site at build time
+    // and live in the deploy tree. Writing them is a development workflow; staging and production refuse it unless
+    // a developer opts in with LEGACY_FILE_EDITING=1.
+    legacyFileEditing: env.LEGACY_FILE_EDITING === '1' || (env.LEGACY_FILE_EDITING !== '0' && appEnv !== 'staging' && appEnv !== 'production'),
   };
 }
 

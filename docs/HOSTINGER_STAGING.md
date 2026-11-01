@@ -1,5 +1,7 @@
 # Hostinger staging
 
+> **Update 2026-11-01:** `/editor` no longer has its own shared password. It redirects into the Studio (`/admin#/legacy`) and `/api/cms` requires a Studio session with the `legacy.edit` permission. `CMS_PASSWORD` is development-only. Form submissions are stored in MySQL (migration `005`). See `docs/cms/HOSTINGER_REQUIREMENTS.md`.
+
 **Not deployed.** DNS for `preview.foreignafrica.org` has not been changed. Do not point the staging host at this app until this file is approved.
 
 Production WordPress stays on `https://foreignafrica.org`.

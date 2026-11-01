@@ -56,6 +56,6 @@ function App(){
 }
 const root=createRoot(document.getElementById('root'));
 const entry=window.location.pathname;
-if(entry==='/editor'||entry.startsWith('/editor/'))import('./admin/AdminApp.jsx').then(module=>root.render(<module.default/>));
+if(entry==='/editor'||entry.startsWith('/editor/')){if(import.meta.env.DEV)import('./admin/AdminApp.jsx').then(module=>root.render(<module.default/>));else window.location.replace('/admin#/legacy');}
 else if(entry==='/admin'||entry.startsWith('/admin/'))import('./studio/StudioApp.jsx').then(module=>root.render(<module.default/>));
 else root.render(<App/>);
