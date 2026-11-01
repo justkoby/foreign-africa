@@ -16,7 +16,7 @@ async function boot(extra){const env={...baseEnv,...extra};const p=spawn('node',
 const hdr=(h={})=>({'X-Forwarded-Proto':'https','X-Forwarded-For':'203.0.113.9',Origin:TEMP,...h});
 const call=async(path,{method='GET',body,cookie,auth=true,headers={},form}={})=>{const r=await fetch(base+path,{method,headers:{...hdr(),...(auth?{Authorization:basic}:{}),...(form?{}:{'Content-Type':'application/json'}),...(cookie?{Cookie:cookie}:{}),...headers},body:form??(body&&JSON.stringify(body))});const buf=Buffer.from(await r.arrayBuffer());let data={};try{data=JSON.parse(buf.toString())}catch{}return {status:r.status,data,headers:r.headers,buf}};
 try{
-let A=await boot({PREPARE_DATABASE:'1',BOOTSTRAP_ADMIN_EMAIL:'ada@foreignafrica.org',BOOTSTRAP_ADMIN_PASSWORD:'correct-horse-battery'});
+let A=await boot({PREPARE_DATABASE:'1',PREPARE_DATABASE_CONFIRM:db.dbName,BOOTSTRAP_ADMIN_EMAIL:'ada@foreignafrica.org',BOOTSTRAP_ADMIN_PASSWORD:'correct-horse-battery'});
 ok('first start: migrations, admin, seed, ready',/Applied 001_identity.*007_site_content/.test(A.log())&&/Super administrator created/.test(A.log())&&/ready/.test(A.log()),A.log().split('\n').filter(l=>/\[(warn|fail)\]/.test(l)).join(' | ').slice(0,120));
 const noAuth=await call('/',{auth:false});ok('no staging password: 401 + noindex',noAuth.status===401&&/noindex/.test(noAuth.headers.get('x-robots-tag')));
 const login=await call('/api/staff/login',{method:'POST',body:{email:'ada@foreignafrica.org',password:'correct-horse-battery'}});

@@ -45,7 +45,7 @@ Verify: Hostinger's Node.js app UI accepts all of these, supports Node 22, and s
 
 **Code requires:** MySQL reachable at `DB_HOST:DB_PORT` from the Node app; utf8mb4; JSON columns; InnoDB foreign keys. The DB user needs `SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES` (migrations create and alter tables). The app never drops databases (the migrator refuses `DROP DATABASE`).
 
-**Confirmed by you:** MariaDB Server 11.8.9, `127.0.0.1:3306`, InnoDB. Full review and test matrix: `docs/cms/DATABASE_COMPATIBILITY.md`. The suite passes on the identical engine version (157 of 157) and on MySQL 8.0.
+**Confirmed by you:** MariaDB Server 11.8.9, `127.0.0.1:3306`, InnoDB. Full review and test matrix: `docs/cms/DATABASE_COMPATIBILITY.md`. The suite passes on the identical engine version (168 of 168) and on MySQL 8.0.
 
 **Verify:**
 - The CMS database user can `CREATE`, `ALTER`, add foreign keys and has a `max_user_connections` of at least 5 (lower `connectionLimit` in `server/db.js` otherwise).

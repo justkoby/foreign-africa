@@ -8,7 +8,7 @@
 
 | Engine / configuration | Result |
 |---|---|
-| **MariaDB 11.8.9** (official `mariadb:11.8` image, same version as Hostinger), default configuration (`utf8mb4_uca1400_ai_ci`, `STRICT_TRANS_TABLES`) | **157 of 157 pass, 0 skipped** |
+| **MariaDB 11.8.9** (official `mariadb:11.8` image, same version as Hostinger), default configuration (`utf8mb4_uca1400_ai_ci`, `STRICT_TRANS_TABLES`) | **168 of 168 pass, 0 skipped** |
 | MariaDB 11.8.9, strict `sql_mode` incl. `ONLY_FULL_GROUP_BY`, server time zone +09:00, Node `TZ=America/New_York` | 17 of 17 DB suites pass |
 | MariaDB 11.8.9, hostile `sql_mode=NO_BACKSLASH_ESCAPES` | 20 of 20 DB suites pass **after fixes below** (3 failures before) |
 | MariaDB 11.8.9 and MySQL 8.0.46, password-authenticated user with only `SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES` on one database and `MAX_USER_CONNECTIONS 5`: migrate, bootstrap, seed, login, 30 concurrent requests | pass on both |

@@ -89,7 +89,7 @@ test('PREPARE_DATABASE with missing settings stays up and names the missing vari
 
 test('an unreachable database is explained by cause, not with the useless "Database preparation failed."', async t => {
   const dead = await freePort();
-  const app = await run({...stagingBase, PREPARE_DATABASE: '1', DB_HOST: '127.0.0.1', DB_PORT: String(dead), DB_USER: 'secretuser', DB_NAME: 'cms_db'}, {wait: 3500});
+  const app = await run({...stagingBase, PREPARE_DATABASE: '1', PREPARE_DATABASE_CONFIRM: 'cms_db', DB_HOST: '127.0.0.1', DB_PORT: String(dead), DB_USER: 'secretuser', DB_NAME: 'cms_db'}, {wait: 3500});
   t.after(() => app.stop());
   assert.equal(app.exited(), null, 'still running');
   const page = await app.fetch('/');

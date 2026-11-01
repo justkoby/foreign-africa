@@ -69,7 +69,8 @@ Hostinger's screens change; if a label differs, follow the intent and tell me wh
 | `DB_HOST` `DB_PORT` `DB_NAME` `DB_USER` `DB_PASSWORD` | from Step 1 | |
 | `DB_MIGRATE_USER` `DB_MIGRATE_PASSWORD` | only if you made two users | Then `DB_USER` can be data-only |
 | `DB_CONNECTION_LIMIT` | `3` to start | Keep at or below the per-user cap |
-| `PREPARE_DATABASE` | `1` | Applies migrations, creates the first admin, loads the starting content |
+| `PREPARE_DATABASE` | `check` first, then `1` | `check` is a read-only report; `1` applies migrations, creates the first admin and loads the starting content. **Follow `STAGING_DATABASE_INITIALISATION.md`** |
+| `PREPARE_DATABASE_CONFIRM` | the exact `DB_NAME` | Required with `PREPARE_DATABASE=1`; stops initialisation running on the wrong database |
 | `BOOTSTRAP_ADMIN_EMAIL` / `BOOTSTRAP_ADMIN_PASSWORD` / `BOOTSTRAP_ADMIN_NAME` | your details; password 12+ characters | **Remove the password after the first start** |
 | `MEDIA_ROOT` | *(empty)* | Set in Step 7 |
 | `CRON_SECRET` | 40+ random characters | Optional; see `CRON_SCHEDULING.md` |

@@ -44,6 +44,8 @@ export function createBoot() {
     response.setHeader('Retry-After', state.phase === 'starting' ? '10' : '60');
     response.setHeader('X-Robots-Tag', 'noindex, nofollow');
     const path = String(request.url || '').split('?')[0];
+    // A database check is a report, not a failure: it answers 200 so it is easy to read in a browser.
+    if (state.phase === 'check') response.statusCode = 200;
     if (path === '/api/health') {
       response.setHeader('Content-Type', 'application/json; charset=utf-8');
       response.end(JSON.stringify({ok: false, phase: state.phase, problems: state.problems}));
@@ -52,6 +54,8 @@ export function createBoot() {
     response.setHeader('Content-Type', 'text/plain; charset=utf-8');
     const lines = state.phase === 'starting'
       ? ['Foreign Africa is starting. Try again in a few seconds.']
+      : state.phase === 'check'
+      ? ['Foreign Africa database check (read-only: nothing was changed).', '', ...state.problems.map(problem => `[${problem.status}] ${problem.label}: ${problem.detail}`), '', 'To initialise, change the settings as described above and redeploy. The website itself is not started in check mode.']
       : ['Foreign Africa could not start.', '', ...state.problems.map(problem => `- ${problem.label}: ${problem.detail}`), '', 'Fix the setting named above in the hosting panel and redeploy. Nothing was changed in the database by this message.'];
     response.end(`${lines.join('\n')}\n`);
   };

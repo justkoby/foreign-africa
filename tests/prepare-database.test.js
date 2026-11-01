@@ -15,7 +15,7 @@ test('startup preparation migrates, bootstraps once, and seeds without duplicate
     sessionSecret: 'test-secret', appEnv: 'test', passwordCost: 4, publicSiteUrl: 'https://preview.foreignafrica.org',
     mediaRoot: '', cookieSecure: false, stagingUser: '', stagingPassword: '',
   };
-  const env = {PREPARE_DATABASE: '1', BOOTSTRAP_ADMIN_EMAIL: 'ada@foreignafrica.org', BOOTSTRAP_ADMIN_PASSWORD: 'correct-horse-battery', BOOTSTRAP_ADMIN_NAME: 'Ada'};
+  const env = {PREPARE_DATABASE: '1', PREPARE_DATABASE_CONFIRM: database.dbName, BOOTSTRAP_ADMIN_EMAIL: 'ada@foreignafrica.org', BOOTSTRAP_ADMIN_PASSWORD: 'correct-horse-battery', BOOTSTRAP_ADMIN_NAME: 'Ada'};
   t.after(async () => { await database.stop(); });
   const first = await prepareDatabase(config, env);
   const second = await prepareDatabase(config, env);

@@ -7,6 +7,7 @@ import {databaseConfigured, readConfig} from './config.js';
 import {createSite} from './site.js';
 import {prepareDatabase} from './prepare.js';
 import {blockingChecks, deploymentChecks} from './deployment-checks.js';
+import {inspectDatabase} from './db-inspect.js';
 import {createBoot, describeStartupError, listenTarget} from './boot.js';
 
 // Bind the port first. A host that sees the app exit before it listens can only say "503"; a listening app can say why.
@@ -41,6 +42,15 @@ async function start() {
   const hosted = config.appEnv === 'staging' || config.appEnv === 'production';
   const blocking = blockingChecks(checks);
   if (hosted && blocking.length) return fail('configuration', blocking.map(({label, detail}) => ({label, detail})), config);
+  if (process.env.PREPARE_DATABASE === 'check') {
+    // Read-only inspection: reports what initialisation would do, and changes nothing.
+    const report = await inspectDatabase(config);
+    boot.state.phase = 'check';
+    boot.state.problems = report;
+    for (const item of report) console.log(`[check:${item.status}] ${item.label}: ${item.detail}`);
+    console.log('Database check finished. Nothing was changed. The website is not started in check mode.');
+    return;
+  }
   try {
     await prepareDatabase(config);
   } catch (error) {

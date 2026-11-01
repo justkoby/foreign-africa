@@ -15,7 +15,7 @@ test('startup works for a least-privilege, connection-capped database user', {ti
   await root.query("CREATE USER 'fa_cms'@'%' IDENTIFIED BY 'a-long-test-password' WITH MAX_USER_CONNECTIONS 5");
   await root.query(`GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, REFERENCES ON \`${database.dbName}\`.* TO 'fa_cms'@'%'`);
   const config = {dbHost: '127.0.0.1', dbPort: database.port, dbUser: 'fa_cms', dbPassword: 'a-long-test-password', dbName: database.dbName, sessionSecret: 'test-secret', appEnv: 'test', passwordCost: 4, publicSiteUrl: 'http://127.0.0.1:9', mediaRoot: '', cookieSecure: false, stagingUser: '', stagingPassword: ''};
-  const env = {PREPARE_DATABASE: '1', BOOTSTRAP_ADMIN_EMAIL: 'ada@foreignafrica.org', BOOTSTRAP_ADMIN_PASSWORD: 'correct-horse-battery'};
+  const env = {PREPARE_DATABASE: '1', PREPARE_DATABASE_CONFIRM: database.dbName, BOOTSTRAP_ADMIN_EMAIL: 'ada@foreignafrica.org', BOOTSTRAP_ADMIN_PASSWORD: 'correct-horse-battery'};
   const first = await prepareDatabase(config, env);
   assert.equal(first.seeded, true);
   assert.equal(first.report.blocked.length, 0);
@@ -49,7 +49,7 @@ test('the running site works with data-only privileges when a separate account r
   await root.query("CREATE USER 'fa_runtime'@'%' IDENTIFIED BY 'runtime-test-password'");
   await root.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ${db}.* TO 'fa_runtime'@'%'`);
   const config = {dbHost: '127.0.0.1', dbPort: database.port, dbUser: 'fa_runtime', dbPassword: 'runtime-test-password', dbMigrateUser: 'fa_migrate', dbMigratePassword: 'migrate-test-password', dbName: database.dbName, dbConnectionLimit: 3, sessionSecret: 'test-secret', appEnv: 'test', passwordCost: 4, publicSiteUrl: 'http://127.0.0.1:9', mediaRoot: '', cookieSecure: false, stagingUser: '', stagingPassword: '', cronSecret: 'c'.repeat(40)};
-  const env = {PREPARE_DATABASE: '1', BOOTSTRAP_ADMIN_EMAIL: 'ada@foreignafrica.org', BOOTSTRAP_ADMIN_PASSWORD: 'correct-horse-battery'};
+  const env = {PREPARE_DATABASE: '1', PREPARE_DATABASE_CONFIRM: database.dbName, BOOTSTRAP_ADMIN_EMAIL: 'ada@foreignafrica.org', BOOTSTRAP_ADMIN_PASSWORD: 'correct-horse-battery'};
   assert.equal((await prepareDatabase(config, env)).seeded, true, 'migrations, bootstrap and seed ran through the migration account');
 
   // The runtime account genuinely cannot change the schema.

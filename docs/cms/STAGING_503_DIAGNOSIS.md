@@ -56,7 +56,7 @@ Automated: `tests/boot.test.js` (10) spawns the real server for each case above;
 **Required for the first start:**
 `APP_ENV=staging` · `PUBLIC_SITE_URL` (exactly `https://maroon-gazelle-601956.hostingersite.com`, no trailing slash or path) · `SESSION_SECRET` (40+ random characters) · `STAGING_USER` · `STAGING_PASSWORD` (12+ characters) · `DB_HOST` · `DB_PORT` · `DB_NAME` · `DB_USER` · `DB_PASSWORD`.
 
-**Only for the first start:** `PREPARE_DATABASE=1`, `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` (12+). Remove the password afterwards.
+**Only for the first start:** `PREPARE_DATABASE=1` with `PREPARE_DATABASE_CONFIRM` (the exact `DB_NAME`), `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` (12+). Run `PREPARE_DATABASE=check` first; see `STAGING_DATABASE_INITIALISATION.md`. Remove the password afterwards.
 
 **Leave empty or unset for now:** `MEDIA_ROOT` (until the storage test passes), `CRON_SECRET`, `CMS_PASSWORD`, `LEGACY_FILE_EDITING`, `GEMINI_*`.
 
