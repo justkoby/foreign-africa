@@ -1,4 +1,5 @@
 import {sqlTime} from './text.js';
+import {assertCmsDatabase} from './database-guard.js';
 
 const insertOrder = ['users', 'user_roles', 'media_assets', 'terms', 'content_items', 'content_revisions', 'content_terms', 'forms', 'submissions', 'submission_notes', 'activity_logs'];
 const deleteOrder = [...insertOrder].reverse();
@@ -21,13 +22,29 @@ export async function exportTables(pool) {
 }
 
 export async function importTables(pool, dump) {
-  await pool.query('SET FOREIGN_KEY_CHECKS=0');
-  for (const table of deleteOrder) await pool.query(`DELETE FROM \`${table}\``);
-  for (const table of insertOrder) {
-    for (const row of dump[table] ?? []) {
-      const keys = Object.keys(row);
-      await pool.query(`INSERT INTO \`${table}\` (${keys.map(key => `\`${key}\``).join(',')}) VALUES (${keys.map(() => '?').join(',')})`, keys.map(key => cell(row[key])));
+  const names = await assertCmsDatabase(pool, {action: 'restore'});
+  if (!names.includes('schema_migrations')) throw new Error('Refusing to restore into a database without Foreign Africa tables. Run the migrations first.');
+  // One dedicated connection: FOREIGN_KEY_CHECKS is per connection, and a transaction means a failed restore
+  // rolls back instead of leaving emptied tables. (Only DML here; DDL would commit implicitly.)
+  const connection = await pool.getConnection();
+  try {
+    await connection.query('SET FOREIGN_KEY_CHECKS=0');
+    await connection.beginTransaction();
+    try {
+      for (const table of deleteOrder) await connection.query(`DELETE FROM \`${table}\``);
+      for (const table of insertOrder) {
+        for (const row of dump[table] ?? []) {
+          const keys = Object.keys(row);
+          await connection.execute(`INSERT INTO \`${table}\` (${keys.map(key => `\`${key}\``).join(',')}) VALUES (${keys.map(() => '?').join(',')})`, keys.map(key => cell(row[key])));
+        }
+      }
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
     }
+  } finally {
+    await connection.query('SET FOREIGN_KEY_CHECKS=1').catch(() => {});
+    connection.release();
   }
-  await pool.query('SET FOREIGN_KEY_CHECKS=1');
 }

@@ -15,7 +15,8 @@
     "bootstrap-admin": "node --env-file-if-exists=.env.local server/bootstrap-admin.js",
     "promote-scheduled": "node --env-file-if-exists=.env.local server/promote-scheduled.js",
     "seed-content": "node --env-file-if-exists=.env.local server/seed-content.js",
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/*.test.js",
+    "test:mariadb": "TEST_DB=mariadb node --test tests/*.test.js"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",

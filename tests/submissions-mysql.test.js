@@ -149,4 +149,13 @@ test('submissions, consolidated /api/cms and lazy scheduling (real MySQL)', {tim
     const [[answers]] = await pool.query("SELECT JSON_UNQUOTE(JSON_EXTRACT(payload, '$.answers.email')) AS email FROM submissions WHERE reference = 'FA-OLD1'");
     assert.equal(answers.email, 'old@example.org');
   });
+
+  await t.test('a failed restore rolls back and leaves the data in place', async () => {
+    const dump = JSON.parse(JSON.stringify(await exportTables(pool)));
+    const [[before]] = await pool.query('SELECT COUNT(*) AS n FROM submissions');
+    dump.submissions.push({...dump.submissions[0], id: 999999, reference: null, client_key: null, payload: 'not json at all'});
+    await assert.rejects(() => importTables(pool, dump));
+    const [[after]] = await pool.query('SELECT COUNT(*) AS n FROM submissions');
+    assert.equal(Number(after.n), Number(before.n), 'nothing was lost by the failed restore');
+  });
 });

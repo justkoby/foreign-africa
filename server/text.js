@@ -64,3 +64,9 @@ export function stagingCanonicalBlocked(config) {
     return true;
   }
 }
+
+// Escape a user search term for LIKE using '!' (write ESCAPE '!'). Backslash escaping is avoided on purpose:
+// it changes meaning under the NO_BACKSLASH_ESCAPES sql_mode that MySQL and MariaDB servers may enable.
+export function likeContains(value) {
+  return `%${String(value).replace(/[!%_]/g, match => `!${match}`)}%`;
+}

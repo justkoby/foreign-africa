@@ -1,6 +1,6 @@
 # Hostinger Business: requirements and verification checklist
 
-Status: **nothing here has been verified on Hostinger.** "Code requires" is read from this repository and exercised against a disposable MySQL 8.0.46. "Verify" items must be confirmed in hPanel by you before any deploy. No hosting settings were changed.
+Status: **nothing here has been verified on Hostinger.** "Code requires" is read from this repository and exercised against disposable MariaDB 11.8.9 (the Hostinger engine) and MySQL 8.0.46. "Verify" items must be confirmed in hPanel by you before any deploy. No hosting settings were changed.
 
 ## 1. Scheduled publishing (no background worker assumed)
 
@@ -51,11 +51,11 @@ Verify: Hostinger's Node.js app UI accepts all of these, supports Node 22, and s
 
 **Code requires:** MySQL reachable at `DB_HOST:DB_PORT` from the Node app; utf8mb4; JSON columns; InnoDB foreign keys. The DB user needs `SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES` (migrations create and alter tables). The app never drops databases (the migrator refuses `DROP DATABASE`).
 
+**Confirmed by you:** MariaDB Server 11.8.9, `127.0.0.1:3306`, InnoDB. Full review and test matrix: `docs/cms/DATABASE_COMPATIBILITY.md`. The suite passes on the identical engine version (93 of 93) and on MySQL 8.0.
+
 **Verify:**
-- Host to use (`127.0.0.1` vs `localhost` vs a named host) and port, from hPanel → Databases.
-- **Engine and version.** All tests ran on **MySQL 8.0.46**, not 8.4 and not MariaDB. If hPanel provisions MariaDB, treat compatibility as untested (JSON columns, `JSON_EXTRACT`, `CAST(JSON AS CHAR)`).
-- Max connections (the pool opens several).
-- A **new** empty database and a user limited to it; never the WordPress database.
+- The CMS database user can `CREATE`, `ALTER`, add foreign keys and has a `max_user_connections` of at least 5 (lower `connectionLimit` in `server/db.js` otherwise).
+- A **new, empty** database exists for the CMS. The code refuses to migrate into a database that has WordPress tables or any tables without our ledger.
 
 ## 5. Media upload permissions
 
@@ -67,7 +67,7 @@ Upload limits and validation are in `server/media.js` (magic-byte sniffing, size
 |---|---|---|
 | MySQL | hPanel backup/export, or `mysqldump` | Verify retention, restore path and who can restore |
 | `MEDIA_ROOT` | Copy with the DB dump; **verify whether hPanel backups include it** | Unknown |
-| App-level JSON dump (`server/backup.js`) | Now includes `forms`, `submissions`, `submission_notes`. **Before this change a restore would have dropped all submissions.** Also tolerates timestamps from a dump written to a file | Tested on MySQL 8.0.46 |
+| App-level JSON dump (`server/backup.js`) | Now includes `forms`, `submissions`, `submission_notes`. **Before this change a restore would have dropped all submissions.** Also tolerates timestamps from a dump written to a file | Tested on MariaDB 11.8.9 and MySQL 8.0.46 |
 | Code | Redeploy a Git commit | |
 
 **Confidentiality:** a dump now contains applicant names, emails and message text, and staff password hashes. Store it encrypted or access-restricted, outside `public_html`, and never attach it to tickets or chat.
@@ -75,4 +75,4 @@ Upload limits and validation are in `server/media.js` (magic-byte sniffing, size
 **Restore drill (not yet run on Hostinger):** restore into a *new* database, point a staging copy at it, sign in, open a submission, and open a media file. Record time taken.
 
 ## What is still unverified on Hostinger
-Node 22 availability and process behaviour; cron availability and its Node version; `MEDIA_ROOT` persistence and write permission; database engine/version; hPanel backup scope; proxy upload limits; everything in the browser checklist of `STAGING_READINESS_REPORT.md`.
+Node 22 availability and process behaviour; cron availability and its Node version; `MEDIA_ROOT` persistence and write permission; the database user's privileges and connection cap; hPanel backup scope; proxy upload limits; everything in the browser checklist of `STAGING_READINESS_REPORT.md`.

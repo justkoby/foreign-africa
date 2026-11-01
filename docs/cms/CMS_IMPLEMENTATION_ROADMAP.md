@@ -8,7 +8,7 @@ Base: `staging` + this branch. Architecture retained: Express 4, MySQL, Tiptap, 
 - Inter for `/admin` and `/editor` only; public Mark Pro untouched and browser-verified.
 - This documentation set corrected.
 
-## Step 1 status (2026-11-01): implemented, MySQL-verified on 8.0.46 only, not deployed
+## Step 1 status (2026-11-01): implemented, verified on MariaDB 11.8.9 and MySQL 8.0.46, not deployed
 - `/api/cms` and `/editor` consolidated into the Studio: Studio session + `legacy.edit` role; shared password and file submissions retired on the Express server (410).
 - Legacy file collections embedded under `/admin#/legacy/...`; writes disabled in staging/production unless `LEGACY_FILE_EDITING=1` (they are build-time files and would be lost on redeploy).
 - Submissions moved to MySQL (migration `005`): server-side validation, dedupe, rate limit, statuses, assignment (administrators only), notes, CSV export with formula defusing, audit log without personal data, idempotent import of any old `submissions.json`.

@@ -4,7 +4,7 @@ import {mkdir, readFile, rm, writeFile} from 'node:fs/promises';
 import {basename, join, resolve, sep} from 'node:path';
 import Busboy from 'busboy';
 import {fail} from './errors.js';
-import {sqlTime} from './text.js';
+import {likeContains, sqlTime} from './text.js';
 
 const imageLimit = 8 * 1024 * 1024;
 const pdfLimit = 15 * 1024 * 1024;
@@ -155,8 +155,8 @@ export async function listMedia(pool, query) {
   const where = ['deleted_at IS NULL'];
   const params = [];
   if (query) {
-    where.push("(original_name LIKE ? ESCAPE '\\\\' OR alt_text LIKE ? ESCAPE '\\\\')");
-    const like = `%${String(query).replace(/[\\%_]/g, match => `\\${match}`)}%`;
+    where.push("(original_name LIKE ? ESCAPE '!' OR alt_text LIKE ? ESCAPE '!')");
+    const like = likeContains(query);
     params.push(like, like);
   }
   const [rows] = await pool.execute(`SELECT id, storage_path, mime_type, original_name, byte_size, width, height, thumb_path, alt_text, created_at FROM media_assets WHERE ${where.join(' AND ')} ORDER BY id DESC LIMIT 60`, params);

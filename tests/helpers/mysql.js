@@ -1,5 +1,6 @@
-// Disposable MySQL for integration tests. Never touches an existing database.
-// Prefers a system mysqld (set TEST_MYSQL_BIN, or it is found on PATH / /usr/sbin);
+// Disposable MySQL/MariaDB for integration tests. Never touches an existing database.
+// TEST_DB=mariadb runs a throwaway Docker container (TEST_MARIADB_IMAGE, default mariadb:11.8, the version on Hostinger).
+// Otherwise prefers a system mysqld (set TEST_MYSQL_BIN, or it is found on PATH / /usr/sbin);
 // otherwise falls back to mysql-memory-server, which downloads MySQL on first use.
 import {spawn, spawnSync} from 'node:child_process';
 import {existsSync, mkdtempSync, rmSync} from 'node:fs';
@@ -43,7 +44,26 @@ async function startSystemMysql(bin) {
   return {port, username: 'root', dbName, stop, flavour: 'system mysqld'};
 }
 
+async function startMariadbDocker() {
+  const image = process.env.TEST_MARIADB_IMAGE || 'mariadb:11.8';
+  const dbName = `fa_test_${Date.now().toString(36)}`;
+  const run = spawnSync('docker', ['run', '-d', '--rm', '-p', '127.0.0.1::3306', '-e', 'MARIADB_ALLOW_EMPTY_ROOT_PASSWORD=1', '-e', `MARIADB_DATABASE=${dbName}`, image, '--character-set-server=utf8mb4', '--collation-server=utf8mb4_unicode_ci', ...(process.env.TEST_MARIADB_ARGS ? process.env.TEST_MARIADB_ARGS.split(' ') : [])], {encoding: 'utf8'});
+  if (run.status !== 0) throw new Error(`docker run failed: ${(run.stderr || '').slice(-300)}`);
+  const id = run.stdout.trim();
+  const stop = async () => { spawnSync('docker', ['rm', '-f', id]); };
+  const mapped = spawnSync('docker', ['port', id, '3306/tcp'], {encoding: 'utf8'}).stdout.trim().split('\n')[0];
+  const port = Number(mapped.split(':').pop());
+  let ready = false;
+  for (let attempt = 0; attempt < 120 && !ready; attempt += 1) {
+    try { const c = await mysql.createConnection({host: '127.0.0.1', port, user: 'root', database: dbName}); const [[v]] = await c.query('SELECT VERSION() AS v'); await c.end(); console.log(`# database under test: ${v.v}`); ready = true; }
+    catch { await new Promise(resolve => setTimeout(resolve, 500)); }
+  }
+  if (!ready) { await stop(); throw new Error('MariaDB container did not become ready.'); }
+  return {port, username: 'root', dbName, stop, flavour: image};
+}
+
 export async function createDisposableMysql() {
+  if (process.env.TEST_DB === 'mariadb') return startMariadbDocker();
   const bin = findMysqld();
   if (bin) return startSystemMysql(bin);
   const {createDB} = await import('mysql-memory-server');

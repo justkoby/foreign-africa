@@ -2,7 +2,7 @@ import {allows} from './permissions.js';
 import {fail} from './errors.js';
 import {documentHtml, documentText, normalizeDocument} from './document.js';
 import {mediaUrl} from './media.js';
-import {slugify, sqlTime} from './text.js';
+import {likeContains, slugify, sqlTime} from './text.js';
 
 const types = new Set(['news', 'commentary', 'page', 'programme']);
 const reviewStatuses = new Set(['in_review', 'changes_requested', 'approved', 'rejected']);
@@ -179,8 +179,8 @@ export async function listContent(pool, {type, status, q, includeDrafts, page = 
     params.push(status);
   }
   if (q) {
-    where.push("(c.title LIKE ? ESCAPE '\\\\' OR c.summary LIKE ? ESCAPE '\\\\')");
-    const like = `%${String(q).replace(/[\\%_]/g, match => `\\${match}`)}%`;
+    where.push("(c.title LIKE ? ESCAPE '!' OR c.summary LIKE ? ESCAPE '!')");
+    const like = likeContains(q);
     params.push(like, like);
   }
   const size = Math.min(Math.max(Number(pageSize) || 20, 1), 100);

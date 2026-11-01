@@ -76,3 +76,9 @@ test('the old handler behaviour is unchanged when no authorizer is supplied (loc
   const login = await call(handler, 'POST', '/api/cms/login', {body: {password: 'pw'}});
   assert.equal(login.statusCode, 200);
 });
+
+import {likeContains} from '../server/text.js';
+test('LIKE terms are escaped without backslashes', () => {
+  assert.equal(likeContains('50%_off!'), '%50!%!_off!!%');
+  assert.ok(!likeContains('a\\b').includes('\\\\'), 'backslashes are left alone, not doubled');
+});

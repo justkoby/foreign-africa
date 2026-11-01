@@ -3,6 +3,7 @@ import {join, dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createPool} from './db.js';
 import {databaseConfigured, readConfig} from './config.js';
+import {assertCmsDatabase} from './database-guard.js';
 
 const ledger = `CREATE TABLE IF NOT EXISTS schema_migrations (
   id VARCHAR(64) NOT NULL PRIMARY KEY,
@@ -26,6 +27,7 @@ export function migrationFiles(directory) {
 }
 
 export async function migrate({pool, directory}) {
+  await assertCmsDatabase(pool, {action: 'migrate'});
   await pool.query(ledger);
   const [rows] = await pool.query('SELECT id FROM schema_migrations');
   const applied = new Set(rows.map(row => row.id));

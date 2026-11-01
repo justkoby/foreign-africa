@@ -83,11 +83,11 @@ function filters({status, form}) {
 export async function listSubmissions({pool, clock, actor, status, form, mine, page = 1, pageSize = 25}) {
   const {where, params} = filters({status, form});
   if (mine) { where.push('s.assigned_to = ?'); params.push(actor.id); }
-  const size = Math.min(Math.max(Number(pageSize) || 25, 1), 100);
-  const offset = (Math.max(Number(page) || 1, 1) - 1) * size;
+  const size = Math.min(Math.max(Math.trunc(Number(pageSize)) || 25, 1), 100);
+  const offset = (Math.max(Math.trunc(Number(page)) || 1, 1) - 1) * size;
   const clause = where.length ? ` WHERE ${where.join(' AND ')}` : '';
-  const [rows] = await pool.query(`${select}${clause} ORDER BY s.created_at DESC, s.id DESC LIMIT ${size} OFFSET ${offset}`, params);
-  const [total] = await pool.query(`SELECT COUNT(*) AS n FROM submissions s JOIN forms f ON f.id = s.form_id${clause}`, params);
+  const [rows] = await pool.execute(`${select}${clause} ORDER BY s.created_at DESC, s.id DESC LIMIT ${size} OFFSET ${offset}`, params);
+  const [total] = await pool.execute(`SELECT COUNT(*) AS n FROM submissions s JOIN forms f ON f.id = s.form_id${clause}`, params);
   await audit(pool, clock, actor.id, 'submission.listed', '', {status: status || '', form: form || '', count: rows.length});
   return {items: rows.map(present), total: Number(total[0].n), page: Number(page) || 1, pageSize: size};
 }
@@ -144,7 +144,7 @@ export function csvCell(value) {
 export async function exportCsv({pool, clock, actor, status, form}) {
   const {where, params} = filters({status, form});
   const clause = where.length ? ` WHERE ${where.join(' AND ')}` : '';
-  const [rows] = await pool.query(`${select}${clause} ORDER BY s.created_at ASC, s.id ASC LIMIT 5000`, params);
+  const [rows] = await pool.execute(`${select}${clause} ORDER BY s.created_at ASC, s.id ASC LIMIT 5000`, params);
   const items = rows.map(present);
   const keys = [...new Set(items.flatMap(item => item.fields.map(field => field.id)))];
   const labels = Object.fromEntries(items.flatMap(item => item.fields.map(field => [field.id, field.label])));
