@@ -5,6 +5,7 @@ import {ContentEditor, ContentList} from './ArticleEditor.jsx';
 import MediaLibrary from './MediaLibrary.jsx';
 import Submissions from './Submissions.jsx';
 import Legacy from './Legacy.jsx';
+import {confirmLeave, setUnsaved} from './unsaved.js';
 import '@fontsource/inter/latin-400.css';
 import '@fontsource/inter/latin-500.css';
 import '@fontsource/inter/latin-600.css';
@@ -102,7 +103,17 @@ export default function StudioApp() {
   const [session, setSession] = useState(undefined);
   const [hash, setHash] = useState(() => window.location.hash.slice(1) || '/');
   useEffect(() => {api('/api/staff/session').then(data => setSession(data)).catch(() => setSession({user: null, configured: false, error: 'The staff service is not available.'}));}, []);
-  useEffect(() => {const onHash = () => setHash(window.location.hash.slice(1) || '/'); window.addEventListener('hashchange', onHash); return () => window.removeEventListener('hashchange', onHash);}, []);
+  useEffect(() => {
+    let current = window.location.hash.slice(1) || '/';
+    const onHash = () => {
+      const next = window.location.hash.slice(1) || '/';
+      if (next === current) return;
+      if (!confirmLeave()) {window.location.hash = current; return;}
+      setUnsaved(false); current = next; setHash(next);
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
   useEffect(() => {document.title = 'Studio — Foreign Africa';}, []);
   if (session === undefined) return <main className="studio-login"><p>Loading studio…</p></main>;
   if (!session.user) return <LoginScreen notice={session.error || (session.configured === false ? 'The staff database is not configured on this server.' : '')} onSuccess={user => setSession({user, configured: true})}/>;

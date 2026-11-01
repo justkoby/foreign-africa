@@ -17,6 +17,10 @@ Base: `staging` + this branch. Architecture retained: Express 4, MySQL, Tiptap, 
 - Studio navigation grouped, breadcrumbs, responsive fixes, admin-only heading typography.
 - Remaining for the legacy collections: migrate events, people, engage pages and form definitions themselves into MySQL with runtime public APIs (Steps 5–7). Until then they are a build-time workflow.
 
+## Step 4 progress (2026-11-01): started
+Done: bulk publish / move to draft / archive / delete from the content list (loops over the single-item functions, so per-item permissions still apply; max 50; per-item results; audited), and an in-app unsaved-changes guard. Verified in a real browser and on MariaDB 11.8.9 and MySQL 8.0.
+Still to do in Step 4: tables, approved video embeds, category/tag management, media replace / drag-and-drop / grid-list / usage panel.
+
 ## Open items I need from you
 1. **Antigravity changes**: not on the remote. Push the branch or tell me where it is before I touch overlapping areas (editor, media, admin shell).
 2. **Run `npm test` somewhere with internet** (or provide MySQL 8) so the 3 MySQL suites run. I will not claim database behaviour as verified until then.

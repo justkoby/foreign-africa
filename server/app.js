@@ -342,6 +342,12 @@ export function createApp({config, pool, clock = () => Date.now(), forms}) {
     send(res, 201, {item: await store.createContent({pool, clock, actor: user, input: req.body ?? {}})});
   }));
 
+  app.post('/api/staff/content/bulk', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('content.read')(req);
+    send(res, 200, {results: await store.bulkContent({pool, clock, actor: user, action: req.body?.action, ids: req.body?.ids})});
+  }));
+
   app.get('/api/staff/content/:id', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('content.read')(req);

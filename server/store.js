@@ -4,7 +4,7 @@ import {fail} from './errors.js';
 import {hashIp, hashToken, newToken, sqlTime} from './text.js';
 
 export {fail};
-export {createContent, listContent, getContent, updateContent, setContentState, deleteContent, duplicateContent, revisions, restoreRevision, promoteScheduled, promoteDue, publicItem, publicView, importContent, editorCanSee} from './content-store.js';
+export {createContent, listContent, getContent, updateContent, setContentState, deleteContent, bulkContent, duplicateContent, revisions, restoreRevision, promoteScheduled, promoteDue, publicItem, publicView, importContent, editorCanSee} from './content-store.js';
 
 const sessionMs = 7 * 24 * 60 * 60 * 1000;
 const windowMs = 15 * 60 * 1000;

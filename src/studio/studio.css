@@ -112,3 +112,8 @@
 @media (min-width:901px){.studio-menu{display:none!important}}
 @media (max-width:900px){.studio-main table{display:block;max-width:100%;overflow-x:auto}}
 @media (max-width:900px){.studio-main>*:not(header){margin-left:12px;margin-right:12px}}
+
+.studio-bulk{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px;background:#e5f0fa;border:1px solid #b6d4ee;margin-bottom:12px;font-size:14px}
+.studio-bulk button.is-danger{background:#b32d2e}
+.studio-notice{background:#e3f4e8;color:#14532d;padding:10px 12px}
+.studio-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}

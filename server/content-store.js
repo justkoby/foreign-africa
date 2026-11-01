@@ -257,6 +257,30 @@ export async function deleteContent({pool, clock, actor, id}) {
   await recordActivity(pool, clock, {actorId: actor.id, action: 'content.deleted', subjectType: 'content', subjectId: id, metadata: {}});
 }
 
+export const bulkActions = {publish: 'published', unpublish: 'draft', archive: 'archived'};
+
+// Bulk actions are a loop over the single-item functions, so every per-item permission rule still applies and a
+// bulk request can never do anything one request could not. One item failing never blocks the others.
+export async function bulkContent({pool, clock, actor, action, ids}) {
+  if (!(action in bulkActions) && action !== 'delete') throw fail(400, 'Choose a bulk action.');
+  if (!Array.isArray(ids) || !ids.length || ids.length > 50) throw fail(400, 'Select between 1 and 50 items.');
+  const unique = [...new Set(ids.map(Number))];
+  if (unique.some(id => !Number.isInteger(id) || id < 1)) throw fail(400, 'Select valid items.');
+  const results = [];
+  for (const id of unique) {
+    try {
+      if (action === 'delete') await deleteContent({pool, clock, actor, id});
+      else await setContentState({pool, clock, actor, id, status: bulkActions[action]});
+      results.push({id, ok: true});
+    } catch (error) {
+      if (!error.status || error.status >= 500) throw error;
+      results.push({id, ok: false, error: error.message});
+    }
+  }
+  await recordActivity(pool, clock, {actorId: actor.id, action: 'content.bulk', subjectType: 'content', subjectId: '', metadata: {action, requested: unique.length, succeeded: results.filter(r => r.ok).length}});
+  return results;
+}
+
 export async function duplicateContent({pool, clock, actor, id}) {
   const current = await getContent(pool, id);
   if (!canEdit(actor, current) && !allows(actor.roles, 'content.read')) throw fail(403, 'You cannot copy that page.');
