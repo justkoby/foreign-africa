@@ -8,7 +8,7 @@
 
 | Engine / configuration | Result |
 |---|---|
-| **MariaDB 11.8.9** (official `mariadb:11.8` image, same version as Hostinger), default configuration (`utf8mb4_uca1400_ai_ci`, `STRICT_TRANS_TABLES`) | **93 of 93 pass, 0 skipped** |
+| **MariaDB 11.8.9** (official `mariadb:11.8` image, same version as Hostinger), default configuration (`utf8mb4_uca1400_ai_ci`, `STRICT_TRANS_TABLES`) | **115 of 115 pass, 0 skipped** |
 | MariaDB 11.8.9, strict `sql_mode` incl. `ONLY_FULL_GROUP_BY`, server time zone +09:00, Node `TZ=America/New_York` | 17 of 17 DB suites pass |
 | MariaDB 11.8.9, hostile `sql_mode=NO_BACKSLASH_ESCAPES` | 20 of 20 DB suites pass **after fixes below** (3 failures before) |
 | MariaDB 11.8.9 and MySQL 8.0.46, password-authenticated user with only `SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES` on one database and `MAX_USER_CONNECTIONS 5`: migrate, bootstrap, seed, login, 30 concurrent requests | pass on both |
@@ -48,3 +48,30 @@ Reproduce: `docker pull mariadb:11.8` then `TEST_DB=mariadb npm test` (see `test
 1. In hPanel, create a **new empty database and user** for the CMS. Do not reuse the WordPress database.
 2. Set `DB_*` to that database. The guard will refuse to start preparation if the database is not empty or contains WordPress tables.
 3. First start with `PREPARE_DATABASE=1` applies migrations `001`–`005`.
+
+
+## Minimum privileges (measured, not assumed)
+Each set below was tried by running the full startup path (migrations, first administrator, seed) as a password-authenticated user limited to one empty database. "Needs" means removing it made startup fail.
+
+| Privilege | MariaDB 11.8.9 | MySQL 8.0.46 |
+|---|---|---|
+| `SELECT`, `INSERT`, `UPDATE`, `DELETE` | needed | needed |
+| `CREATE` | needed | needed |
+| `ALTER` | needed (migrations `004`–`006` alter tables) | needed |
+| `REFERENCES` | **not** needed | **needed** (foreign keys) |
+| `INDEX` | not needed | not needed |
+| `DROP`, `TRUNCATE`, `LOCK TABLES`, `CREATE VIEW`, `TRIGGER`, `SUPER`, `CREATE USER`, `PROCESS` | never used | never used |
+
+**Portable minimum for the migration account:** `SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, REFERENCES` on the CMS database only.
+
+**The running site needs only `SELECT, INSERT, UPDATE, DELETE`.** This is tested: a second account with exactly those four privileges runs login, content, scheduling, the cron endpoint, submissions and the staff APIs, and genuinely cannot `CREATE` or `DROP` (the test asserts the denial). Locking reads (`FOR UPDATE`) and transactions need no extra privilege.
+
+### Recommended setup
+- Create two accounts on the **new** CMS database: a *migration* account (portable minimum above) and a *runtime* account (four privileges). Set `DB_USER`/`DB_PASSWORD` to the runtime account and `DB_MIGRATE_USER`/`DB_MIGRATE_PASSWORD` to the migration account. Startup preparation and `npm run migrate` use the migration account; the web server never does.
+- If Hostinger only lets you create one account per database, use it for both (leave `DB_MIGRATE_*` unset). That account then holds DDL rights at runtime; the guard against WordPress/foreign tables and the absence of any `DROP` in the code still apply.
+
+### Connection limit
+`DB_CONNECTION_LIMIT` sets the pool size (default 5, accepted range 1–25; invalid values fall back to 5). Startup preparation opens its own short-lived pool before the web server starts. Tested with a per-user cap of 5 connections and 30 concurrent requests (they queue; none fail), and with a pool of 3. Set it at or below Hostinger's per-user `max_user_connections`, which is **not yet confirmed**.
+
+### Still to verify on Hostinger
+Whether hPanel allows creating two accounts and granting this exact privilege set (some panels grant "ALL PRIVILEGES" only); the real per-user connection cap; the server's `sql_mode`.

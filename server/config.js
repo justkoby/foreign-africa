@@ -6,6 +6,14 @@ export function readConfig(env = process.env) {
     dbUser: env.DB_USER || '',
     dbPassword: env.DB_PASSWORD || '',
     dbName: env.DB_NAME || '',
+    // Pool size per process. Shared hosting often caps connections per database user; keep this at or below that cap.
+    dbConnectionLimit: Math.min(Math.max(Math.trunc(Number(env.DB_CONNECTION_LIMIT)) || 5, 1), 25),
+    // Optional second account with CREATE/ALTER/INDEX/REFERENCES, used only by startup preparation and `npm run migrate`.
+    // When set, the running site can use an account that has only SELECT, INSERT, UPDATE and DELETE.
+    dbMigrateUser: env.DB_MIGRATE_USER || '',
+    dbMigratePassword: env.DB_MIGRATE_PASSWORD || '',
+    // Shared secret for POST /api/cron/publish. Must be at least 32 characters, or the endpoint stays disabled.
+    cronSecret: String(env.CRON_SECRET || '').length >= 32 ? env.CRON_SECRET : '',
     sessionSecret: env.SESSION_SECRET || '',
     appEnv,
     publicSiteUrl: String(env.PUBLIC_SITE_URL || 'http://localhost:5173').replace(/\/$/, ''),

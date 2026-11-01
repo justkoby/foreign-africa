@@ -5,10 +5,11 @@ import {join, resolve} from 'node:path';
 import {allows} from './permissions.js';
 import {externalRedirect, renderContentPage, robotsText, sitemapXml} from './html.js';
 import {readCookie, sameSecret, originAllowed, sqlTime} from './text.js';
-import {listMedia, mediaRootProblem, openMedia, readUpload, removeMedia, saveUpload, updateMediaAlt} from './media.js';
+import {getMedia, listMedia, mediaRootProblem, mediaUsage, openMedia, readUpload, removeMedia, replaceUpload, saveUpload, updateMedia} from './media.js';
 import {createHandler as createDiscoverHandler} from '../api/discover.js';
 import {createHandler as createCmsHandler} from '../api/cms.js';
 import {createCms} from './cms-service.js';
+import {createTerm, deleteTerm, listTerms, updateTerm} from './terms-store.js';
 import {addNote, exportCsv, getSubmission, listSubmissions, recordSubmission, updateSubmission} from './submissions.js';
 import * as store from './store.js';
 
@@ -68,6 +69,8 @@ export function createApp({config, pool, clock = () => Date.now(), forms}) {
   app.use((req, res, next) => {
     if (config.appEnv !== 'staging') return next();
     if (req.path.startsWith('/.well-known/acme-challenge/')) return next();
+    // The scheduler authenticates with its own secret token; it cannot also send the staging Basic password.
+    if (req.path === '/api/cron/publish') return next();
     if (!config.stagingUser || !config.stagingPassword) return send(res, 503, {error: 'Staging access is not configured.'});
     const header = String(req.headers.authorization || '');
     const encoded = header.startsWith('Basic ') ? header.slice(6) : '';
@@ -158,6 +161,43 @@ export function createApp({config, pool, clock = () => Date.now(), forms}) {
     Promise.resolve(cms(req, res)).catch(next);
   });
 
+  // Scheduled publishing trigger for an external cron. Safe to call repeatedly or concurrently: promotion is atomic
+  // and idempotent, so a replayed or duplicated request changes nothing.
+  const cronBuckets = new Map();
+  const cronFailures = new Map();
+  const within = (map, key, max, windowMs) => {
+    const now = clock();
+    for (const [name, value] of map) if (now - value.start >= windowMs) map.delete(name);
+    const entry = map.get(key) ?? {start: now, count: 0};
+    entry.count += 1; map.set(key, entry);
+    return entry.count <= max && map.size <= 5000;
+  };
+  app.all('/api/cron/publish', route(async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!config.cronSecret) return send(res, 404, {error: 'Not found.'});
+    if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return send(res, 405, {error: 'Use POST.'}); }
+    if ((config.appEnv === 'staging' || config.appEnv === 'production') && !req.secure) return send(res, 400, {error: 'HTTPS is required.'});
+    if (!within(cronBuckets, req.ip, 30, 60000)) { res.setHeader('Retry-After', '60'); return send(res, 429, {error: 'Too many requests.'}); }
+    const header = String(req.headers.authorization || '');
+    const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+    if (!token || !sameSecret(token, config.cronSecret)) {
+      if (!within(cronFailures, req.ip, 5, 15 * 60000)) { res.setHeader('Retry-After', '900'); return send(res, 429, {error: 'Too many requests.'}); }
+      console.warn('cron publish: rejected an unauthenticated request');
+      return send(res, 401, {error: 'Unauthorized.'});
+    }
+    if (!pool) return send(res, 503, {error: 'The database is not configured.'});
+    try {
+      const promoted = await store.promoteScheduled(pool, clock);
+      const at = new Date(clock()).toISOString();
+      await pool.execute("INSERT INTO settings (setting_key, setting_value) VALUES ('cron_last_run', ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [JSON.stringify({at, promoted})]);
+      send(res, 200, {ok: true, promoted, at});
+    } catch (error) {
+      console.error(`cron publish failed: ${error.code || error.name}`);
+      await pool.execute("INSERT INTO activity_logs (actor_id, action, subject_type, subject_id, metadata, created_at) VALUES (NULL, 'system.error', 'cron', '', ?, ?)", [JSON.stringify({source: 'cron.publish', code: String(error.code || error.name)}), sqlTime(clock())]).catch(() => {});
+      send(res, 500, {error: 'The run failed.'});
+    }
+  }));
+
   app.get('/robots.txt', (req, res) => {
     res.type('text/plain').send(robotsText(config));
   });
@@ -196,13 +236,17 @@ export function createApp({config, pool, clock = () => Date.now(), forms}) {
     send(res, 200, {item: store.publicView(item)});
   }));
 
-  app.get('/media/:id', route(async (req, res) => {
+  app.get(['/media/:id', '/media/:id/thumb'], route(async (req, res) => {
     if (!pool || !/^\d+$/.test(req.params.id)) return send(res, 404, {error: 'Not found.'});
-    const opened = await openMedia(pool, config, Number(req.params.id), false);
+    const opened = await openMedia(pool, config, Number(req.params.id), req.path.endsWith('/thumb'));
     if (!opened) return send(res, 404, {error: 'Not found.'});
     if (opened.redirect) return res.redirect(302, opened.redirect);
+    // Each stored file has a unique name, so its name is a perfect ETag. Revalidating (instead of caching for a year)
+    // means a replaced image shows up for everyone within minutes while unchanged files still return 304.
+    res.setHeader('ETag', opened.etag);
+    res.setHeader('Cache-Control', 'public, max-age=600, must-revalidate');
+    if (req.headers['if-none-match'] === opened.etag) { opened.stream.destroy(); return res.status(304).end(); }
     res.setHeader('Content-Type', opened.mime);
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     opened.stream.pipe(res);
   }));
@@ -256,13 +300,18 @@ export function createApp({config, pool, clock = () => Date.now(), forms}) {
     } catch {
       database = {status: 'failed', detail: 'The database is not reachable.'};
     }
-    send(res, 200, {database, media: await storageCheck(config), recentErrors, uploadFailures: uploadFailures ?? null, backup: {status: 'unknown', detail: 'Hostinger backups are managed in hPanel. This screen cannot confirm them.'}});
+    let cron = {configured: Boolean(config.cronSecret), lastRun: null};
+    try {
+      const [runs] = await pool.execute("SELECT setting_value FROM settings WHERE setting_key = 'cron_last_run'");
+      if (runs[0]) cron.lastRun = JSON.parse(runs[0].setting_value);
+    } catch { /* health must not fail because of this */ }
+    send(res, 200, {database, media: await storageCheck(config), cron, recentErrors, uploadFailures: uploadFailures ?? null, backup: {status: 'unknown', detail: 'Hostinger backups are managed in hPanel. This screen cannot confirm them.'}});
   }));
 
   app.get('/api/staff/settings', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('settings.read')(req);
-    send(res, 200, {appEnv: config.appEnv, publicSiteUrl: config.publicSiteUrl, mediaConfigured: Boolean(config.mediaRoot), cookieSecure: config.cookieSecure});
+    send(res, 200, {appEnv: config.appEnv, publicSiteUrl: config.publicSiteUrl, mediaConfigured: Boolean(config.mediaRoot), cookieSecure: config.cookieSecure, cronConfigured: Boolean(config.cronSecret), dbConnectionLimit: config.dbConnectionLimit});
   }));
 
   app.get('/api/staff/users', route(async (req, res) => {
@@ -306,7 +355,7 @@ export function createApp({config, pool, clock = () => Date.now(), forms}) {
   app.get('/api/staff/media', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('content.read')(req);
-    send(res, 200, {files: await listMedia(pool, req.query.q)});
+    send(res, 200, await listMedia(pool, {q: req.query.q, type: req.query.type, sort: req.query.sort, page: req.query.page, pageSize: req.query.pageSize}));
   }));
 
   app.post('/api/staff/media', route(async (req, res) => {
@@ -324,8 +373,22 @@ export function createApp({config, pool, clock = () => Date.now(), forms}) {
 
   app.patch('/api/staff/media/:id', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
-    await requireUser('content.update.any')(req);
-    send(res, 200, {asset: await updateMediaAlt({pool, id: Number(req.params.id), alt: req.body?.alt})});
+    const user = await requireUser('content.read')(req);
+    send(res, 200, {asset: await updateMedia({pool, clock, actor: user, canEditAny: allows(user.roles, 'content.update.any'), id: Number(req.params.id), input: req.body ?? {}})});
+  }));
+
+  app.get('/api/staff/media/:id', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    await requireUser('content.read')(req);
+    send(res, 200, {asset: await getMedia(pool, Number(req.params.id)), usage: await mediaUsage(pool, Number(req.params.id))});
+  }));
+
+  app.post('/api/staff/media/:id/replace', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('content.update.any')(req);
+    const asset = await replaceUpload({pool, config, clock, id: Number(req.params.id), upload: await readUpload(req)});
+    await pool.execute('INSERT INTO activity_logs (actor_id, action, subject_type, subject_id, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)', [user.id, 'media.replaced', 'media', req.params.id, '{}', sqlTime(clock())]);
+    send(res, 200, {asset});
   }));
 
   app.delete('/api/staff/media/:id', route(async (req, res) => {
@@ -435,6 +498,31 @@ export function createApp({config, pool, clock = () => Date.now(), forms}) {
     const user = await requireUser('submissions.manage')(req);
     await addNote({pool, clock, actor: user, id: Number(req.params.id), note: req.body?.note});
     send(res, 201, {item: await getSubmission({pool, clock, actor: user, id: Number(req.params.id)})});
+  }));
+
+  app.get('/api/staff/terms', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    await requireUser('content.read')(req);
+    send(res, 200, {terms: await listTerms(pool, {vocabulary: req.query.vocabulary, q: req.query.q})});
+  }));
+
+  app.post('/api/staff/terms', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('terms.manage')(req);
+    send(res, 201, {term: await createTerm({pool, clock, actor: user, input: req.body ?? {}})});
+  }));
+
+  app.patch('/api/staff/terms/:id', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('terms.manage')(req);
+    send(res, 200, {term: await updateTerm({pool, clock, actor: user, id: Number(req.params.id), input: req.body ?? {}})});
+  }));
+
+  app.delete('/api/staff/terms/:id', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('terms.manage')(req);
+    await deleteTerm({pool, clock, actor: user, id: Number(req.params.id), mergeInto: req.query.mergeInto, detach: req.query.detach === '1'});
+    send(res, 200, {ok: true});
   }));
 
   app.post('/api/staff/schedule/run', route(async (req, res) => {

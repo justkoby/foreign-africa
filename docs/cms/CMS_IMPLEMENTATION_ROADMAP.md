@@ -17,9 +17,10 @@ Base: `staging` + this branch. Architecture retained: Express 4, MySQL, Tiptap, 
 - Studio navigation grouped, breadcrumbs, responsive fixes, admin-only heading typography.
 - Remaining for the legacy collections: migrate events, people, engage pages and form definitions themselves into MySQL with runtime public APIs (Steps 5–7). Until then they are a build-time workflow.
 
-## Step 4 progress (2026-11-01): started
-Done: bulk publish / move to draft / archive / delete from the content list (loops over the single-item functions, so per-item permissions still apply; max 50; per-item results; audited), and an in-app unsaved-changes guard. Verified in a real browser and on MariaDB 11.8.9 and MySQL 8.0.
-Still to do in Step 4: tables, approved video embeds, category/tag management, media replace / drag-and-drop / grid-list / usage panel.
+## Step 4 (WordPress-style editor): complete, 2026-11-01
+Verified on MariaDB 11.8.9 and MySQL 8.0.46, and in a real browser; not deployed. Details: `docs/cms/EDITOR.md`.
+Done: tables with row/column/header/merge controls; approved YouTube video blocks (id-only storage, server-built embed); managed categories and tags (create, rename, merge, guarded delete, usage counts); a media library with grid/list, multi-file drag-and-drop upload, search, type filter, sort, pagination, title/alt/caption, usage panel, safe replace and safe delete; Gutenberg-style editor layout; scheduling by date and time; publish checklist; SEO preview; autosave; revisions with compare and restore; bulk actions; unsaved-changes guard. Also: token-protected cron endpoint, configurable pool size, separate migration account, a thumbnail-route bug fix and a rename-a-shared-category bug fix.
+Next: the homepage and hero editor (Step 5), on the same content and media infrastructure.
 
 ## Open items I need from you
 1. **Antigravity changes**: not on the remote. Push the branch or tell me where it is before I touch overlapping areas (editor, media, admin shell).

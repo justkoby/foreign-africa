@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createDisposableMysql} from './helpers/mysql.js';
 import {createPool} from '../server/db.js';
-import {migrate, migrationsDirectory} from '../server/migrate.js';
+import {migrate, migrationFiles, migrationsDirectory} from '../server/migrate.js';
 import {createApp} from '../server/app.js';
 import {provisionAdmin} from '../server/store.js';
 import {importLegacySubmissions} from '../server/submissions.js';
@@ -36,7 +36,7 @@ test('submissions, consolidated /api/cms and lazy scheduling (real MySQL)', {tim
   const clock = () => now;
   t.after(async () => { await pool.end(); await database.stop(); });
 
-  assert.equal((await migrate({pool, directory: migrationsDirectory})).length, 5);
+  assert.equal((await migrate({pool, directory: migrationsDirectory})).length, migrationFiles(migrationsDirectory).length);
   await provisionAdmin({pool, config, clock, email: 'ada@foreignafrica.org', name: 'Ada Admin', password});
   const app = createApp({config, pool, clock, forms: () => forms});
   const {server, url} = await listen(app);

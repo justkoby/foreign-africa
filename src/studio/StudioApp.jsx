@@ -4,6 +4,7 @@ import {allows} from '../../server/permissions.js';
 import {ContentEditor, ContentList} from './ArticleEditor.jsx';
 import MediaLibrary from './MediaLibrary.jsx';
 import Submissions from './Submissions.jsx';
+import Terms from './Terms.jsx';
 import Legacy from './Legacy.jsx';
 import {confirmLeave, setUnsaved} from './unsaved.js';
 import '@fontsource/inter/latin-400.css';
@@ -18,7 +19,7 @@ export function navigation(user) {
   const can = permission => allows(user.roles, permission);
   return [
     {group: 'Overview', items: [{id: '/', label: 'Dashboard'}]},
-    {group: 'Content', items: [...sections.map(([id, label]) => ({id: `/content/${id}`, label})), ...(can('content.read') ? [{id: '/media', label: 'Media library'}] : [])]},
+    {group: 'Content', items: [...sections.map(([id, label]) => ({id: `/content/${id}`, label})), ...(can('content.read') ? [{id: '/media', label: 'Media library'}] : []), ...(can('terms.manage') ? [{id: '/terms', label: 'Categories and tags'}] : [])]},
     ...(can('legacy.edit') ? [{group: 'Site content', items: legacySections.filter(([id]) => id !== 'forms').map(([id, label]) => ({id: `/legacy/${id}`, label}))}] : []),
     ...(can('submissions.read') || can('legacy.edit') ? [{group: 'Engagement', items: [...(can('submissions.read') ? [{id: '/submissions', label: 'Submissions'}] : []), ...(can('legacy.edit') ? [{id: '/legacy/forms', label: 'Form definitions'}] : [])]}] : []),
     {group: 'Administration', items: [...(can('users.read') ? [{id: '/users', label: 'Users'}] : []), ...(can('activity.read') ? [{id: '/activity', label: 'Activity'}] : []), ...(can('health.read') ? [{id: '/health', label: 'System health'}] : []), ...(can('settings.read') ? [{id: '/settings', label: 'Settings'}] : []), {id: '/account', label: 'Your account'}]},
@@ -123,10 +124,11 @@ export default function StudioApp() {
   else if (area === 'content' && type) screen = <ContentList type={type} label={sections.find(item => item[0] === type)?.[1] ?? 'Content'} user={session.user}/>;
   else if (area === 'submissions') screen = allows(session.user.roles, 'submissions.read') ? <Submissions user={session.user} api={api} id={type}/> : <p className="studio-alert" role="alert">You do not have permission to view submissions.</p>;
   else if (area === 'legacy') screen = allows(session.user.roles, 'legacy.edit') ? <Legacy section={type} id={id} editable={Boolean(session.legacyFileEditing)}/> : <p className="studio-alert" role="alert">You do not have permission to edit these collections.</p>;
-  else if (area === 'media') screen = allows(session.user.roles, 'content.read') ? <MediaLibrary/> : <p className="studio-alert" role="alert">You do not have permission to view the media library.</p>;
+  else if (area === 'terms') screen = allows(session.user.roles, 'terms.manage') ? <Terms user={session.user}/> : <p className="studio-alert" role="alert">You do not have permission to manage categories and tags.</p>;
+  else if (area === 'media') screen = allows(session.user.roles, 'content.read') ? <MediaLibrary user={session.user}/> : <p className="studio-alert" role="alert">You do not have permission to view the media library.</p>;
   else if (area === 'users') screen = allows(session.user.roles, 'users.read') ? <Users/> : <p className="studio-alert" role="alert">You do not have permission to view users.</p>;
   else if (area === 'activity') screen = <Plain title="Activity" path="/api/staff/activity" render={data => data.activity.length ? <ul>{data.activity.map(item => <li key={item.id}>{item.action}</li>)}</ul> : <p>No activity yet.</p>}/>;
-  else if (area === 'health') screen = <Plain title="System health" path="/api/staff/health" render={data => <ul><li>Database: {data.database.detail}</li><li>Media: {data.media.detail}</li><li>Recorded errors in the last day: {data.recentErrors ?? 'unavailable'}</li><li>Upload failures in the last day: {data.uploadFailures ?? 'unavailable'}</li><li>{data.backup.detail}</li></ul>}/>;
+  else if (area === 'health') screen = <Plain title="System health" path="/api/staff/health" render={data => <ul><li>Database: {data.database.detail}</li><li>Media: {data.media.detail}</li><li>Scheduled publishing: {data.cron?.configured ? (data.cron.lastRun ? `cron last ran ${new Date(data.cron.lastRun.at).toLocaleString('en-GB')} (${data.cron.lastRun.promoted} published)` : 'cron is configured but has not run yet') : 'cron is not configured; due items still go live when the site is visited'}</li><li>Recorded errors in the last day: {data.recentErrors ?? 'unavailable'}</li><li>Upload failures in the last day: {data.uploadFailures ?? 'unavailable'}</li><li>{data.backup.detail}</li></ul>}/>;
   else if (area === 'settings') screen = <Plain title="Settings" path="/api/staff/settings" render={data => <ul><li>Environment: {data.appEnv}</li><li>Public URL: {data.publicSiteUrl}</li><li>Media storage: {data.mediaConfigured ? 'configured' : 'not configured'}</li><li>Secure cookies: {data.cookieSecure ? 'on' : 'off'}</li></ul>}/>;
   else if (area === 'account') screen = <Account user={session.user}/>;
   return <Shell user={session.user} hash={hash} setHash={setHash} onLogout={async () => {await api('/api/staff/logout', {method: 'POST', body: {}}); setSession({user: null, configured: true});}}>{screen}</Shell>;

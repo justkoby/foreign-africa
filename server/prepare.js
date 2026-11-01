@@ -1,6 +1,6 @@
 import {createPool} from './db.js';
 import {databaseConfigured} from './config.js';
-import {migrate, migrationsDirectory} from './migrate.js';
+import {migrate, migrationConfig, migrationsDirectory} from './migrate.js';
 import {provisionAdmin} from './store.js';
 import {seedCatalogue} from './seed-content.js';
 import {createCms, projectRoot} from './cms-service.js';
@@ -13,7 +13,8 @@ export async function prepareDatabase(config, env = process.env) {
     console.error('PREPARE_DATABASE=1 requires DB_HOST, DB_USER, DB_NAME, and SESSION_SECRET.');
     process.exit(1);
   }
-  const pool = createPool(config);
+  // Startup preparation (migrations, first admin, seed) uses the migration account when one is configured.
+  const pool = createPool(migrationConfig(config));
   try {
     const ran = await migrate({pool, directory: migrationsDirectory});
     console.log(ran.length ? `Applied ${ran.join(', ')}.` : 'Migrations are already up to date.');

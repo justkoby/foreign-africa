@@ -56,6 +56,11 @@ export async function migrate({pool, directory}) {
   return ran;
 }
 
+// Migrations may use a separate, more privileged account so the website itself can run with data-only privileges.
+export function migrationConfig(config) {
+  return config.dbMigrateUser ? {...config, dbUser: config.dbMigrateUser, dbPassword: config.dbMigratePassword} : config;
+}
+
 export const migrationsDirectory = join(dirname(fileURLToPath(import.meta.url)), '..', 'migrations');
 
 async function migrateCli() {
@@ -64,7 +69,7 @@ async function migrateCli() {
     console.error('Set DB_HOST, DB_USER, and DB_NAME before migrating.');
     process.exit(1);
   }
-  const pool = createPool(config);
+  const pool = createPool(migrationConfig(config));
   try {
     const ran = await migrate({pool, directory: migrationsDirectory});
     console.log(ran.length ? `Applied ${ran.join(', ')}` : 'Migrations are already up to date.');

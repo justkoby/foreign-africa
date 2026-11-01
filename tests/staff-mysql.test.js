@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createDisposableMysql} from './helpers/mysql.js';
 import {createPool} from '../server/db.js';
-import {migrate, migrationsDirectory} from '../server/migrate.js';
+import {migrate, migrationFiles, migrationsDirectory} from '../server/migrate.js';
 import {createApp} from '../server/app.js';
 import {provisionAdmin} from '../server/store.js';
 
@@ -40,7 +40,7 @@ test('mysql staff foundation', {timeout: 300000}, async (t) => {
 
   await t.test('migrations apply once and a failed migration is not recorded', async () => {
     const first = await migrate({pool, directory: migrationsDirectory});
-    assert.equal(first.length, 5);
+    assert.equal(first.length, migrationFiles(migrationsDirectory).length);
     assert.deepEqual(await migrate({pool, directory: migrationsDirectory}), []);
     const [roles] = await pool.execute('SELECT COUNT(*) AS n FROM roles');
     assert.equal(Number(roles[0].n), 4);

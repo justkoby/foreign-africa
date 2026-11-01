@@ -128,7 +128,7 @@ async function setTerms(pool, contentId, category, tags) {
     const label = String(name || '').trim();
     const slug = slugify(label);
     if (!slug) continue;
-    await pool.execute('INSERT INTO terms (vocabulary, name, slug) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name)', [vocabulary, label, slug]);
+    await pool.execute('INSERT INTO terms (vocabulary, name, slug) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE slug = slug', [vocabulary, label, slug]); // an existing term keeps its name: typing "diplomacy" must not rename "Diplomacy"
     const [rows] = await pool.execute('SELECT id FROM terms WHERE vocabulary = ? AND slug = ?', [vocabulary, slug]);
     await pool.execute('INSERT IGNORE INTO content_terms (content_id, term_id) VALUES (?, ?)', [contentId, rows[0].id]);
   }
@@ -324,9 +324,31 @@ export async function promoteDue(pool, clock, everyMs = 60000) {
   try { return await promoteScheduled(pool, clock); } catch { return 0; }
 }
 
-export async function promoteScheduled(pool, clock) {
-  const [result] = await pool.execute("UPDATE content_items SET status = 'published', updated_at = ? WHERE status = 'scheduled' AND deleted_at IS NULL AND published_at <= ?", [sqlTime(clock()), sqlTime(clock())]);
-  return result.affectedRows ?? 0;
+// Atomic and idempotent: due rows are locked, flipped and logged in one transaction. Concurrent callers (visitors,
+// cron, staff) queue on the lock; whoever comes second finds nothing due, so each item is promoted and logged once.
+export async function promoteScheduled(pool, clock, attempt = 0) {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const now = sqlTime(clock());
+    const [due] = await connection.execute("SELECT id FROM content_items WHERE status = 'scheduled' AND deleted_at IS NULL AND published_at IS NOT NULL AND published_at <= ? ORDER BY id FOR UPDATE", [now]);
+    if (due.length) {
+      const ids = due.map(row => Number(row.id));
+      await connection.execute(`UPDATE content_items SET status = 'published', updated_at = ? WHERE status = 'scheduled' AND id IN (${ids.map(() => '?').join(',')})`, [now, ...ids]);
+      for (const id of ids) {
+        await connection.execute('INSERT INTO activity_logs (actor_id, action, subject_type, subject_id, metadata, created_at) VALUES (NULL, ?, ?, ?, ?, ?)', ['content.published', 'content', String(id), JSON.stringify({via: 'schedule'}), now]);
+      }
+    }
+    await connection.commit();
+    return due.length;
+  } catch (error) {
+    await connection.rollback().catch(() => {});
+    // Two writers locking in different orders can deadlock; the loser's work is simply redone once.
+    if (error.code === 'ER_LOCK_DEADLOCK' && attempt < 2) return promoteScheduled(pool, clock, attempt + 1);
+    throw error;
+  } finally {
+    connection.release();
+  }
 }
 
 export async function publicItem(pool, type, slug, clock = () => Date.now()) {

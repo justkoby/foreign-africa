@@ -5,3 +5,12 @@
 
 .commentary-reader .article-prose h2,.commentary-reader .article-prose h3,.commentary-reader .article-prose h4,.commentary-reader .article-prose h5{font-size:26px;letter-spacing:-.5px;line-height:1.3}
 .commentary-reader .article-related h2{font-size:38px}@media(max-width:600px){.commentary-reader .article-related h2{font-size:30px}}
+/* Blocks produced by the CMS editor: responsive tables and approved video embeds. Scoped to article bodies. */
+.article-prose .article-table{overflow-x:auto;margin:1.6em 0;-webkit-overflow-scrolling:touch}
+.article-prose .article-table table{border-collapse:collapse;width:100%;min-width:480px;font-size:.95em}
+.article-prose .article-table th,.article-prose .article-table td{border:1px solid rgba(7,28,48,.18);padding:10px 12px;text-align:left;vertical-align:top}
+.article-prose .article-table th{background:rgba(7,28,48,.06);font-weight:700}
+.article-prose .article-table td p,.article-prose .article-table th p{margin:0}
+.article-prose .article-video{margin:2em 0}
+.article-prose .article-video .video-frame{position:relative;aspect-ratio:16/9;background:#071c30}
+.article-prose .article-video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}

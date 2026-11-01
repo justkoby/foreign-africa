@@ -8,7 +8,7 @@ export function createPool(config) {
     password: config.dbPassword,
     database: config.dbName,
     waitForConnections: true,
-    connectionLimit: 5,
+    connectionLimit: config.dbConnectionLimit || 5,
     timezone: 'Z',
     charset: 'utf8mb4',
   });

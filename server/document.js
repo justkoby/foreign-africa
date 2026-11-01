@@ -1,6 +1,9 @@
 import {escapeHtml} from './text.js';
+import {isYoutubeId, youtubeEmbedSrc, youtubeId} from './embeds.js';
 
-const blocks = new Set(['paragraph', 'heading', 'bulletList', 'orderedList', 'listItem', 'blockquote', 'horizontalRule', 'image', 'hardBreak']);
+const blocks = new Set(['paragraph', 'heading', 'bulletList', 'orderedList', 'listItem', 'blockquote', 'horizontalRule', 'image', 'hardBreak', 'table', 'tableRow', 'tableHeader', 'tableCell', 'video']);
+const cellBlocks = new Set(['paragraph', 'bulletList', 'orderedList', 'listItem', 'hardBreak']);
+const limits = {rows: 100, columns: 20, cells: 1000, span: 20};
 const marks = new Set(['bold', 'italic', 'underline', 'link']);
 
 function rejected(message) {
@@ -46,11 +49,43 @@ function cleanText(node) {
   return next;
 }
 
-function cleanNode(node, depth) {
+const span = value => Math.min(Math.max(Math.trunc(Number(value)) || 1, 1), limits.span);
+
+function cleanTable(node, depth, ctx) {
+  if (ctx.inTable) throw rejected('Tables cannot be placed inside tables.');
+  const rows = node.content ?? [];
+  if (!rows.length || rows.length > limits.rows) throw rejected(`A table needs between 1 and ${limits.rows} rows.`);
+  const cleaned = rows.map(row => {
+    if (row?.type !== 'tableRow') throw rejected('The table is not valid.');
+    const cells = row.content ?? [];
+    if (!cells.length || cells.length > limits.columns) throw rejected(`A table row needs between 1 and ${limits.columns} cells.`);
+    return {type: 'tableRow', content: cells.map(cell => {
+      if (cell?.type !== 'tableCell' && cell?.type !== 'tableHeader') throw rejected('The table is not valid.');
+      ctx.cells += 1;
+      if (ctx.cells > limits.cells) throw rejected('The table is too large.');
+      const content = (cell.content ?? []).map(child => cleanNode(child, depth + 3, {...ctx, inTable: true})).filter(Boolean);
+      const colspan = span(cell.attrs?.colspan), rowspan = span(cell.attrs?.rowspan);
+      return {type: cell.type, attrs: {colspan, rowspan}, content: content.length ? content : [{type: 'paragraph'}]};
+    })};
+  });
+  return {type: 'table', content: cleaned};
+}
+
+function cleanNode(node, depth, ctx = {cells: 0, inTable: false}) {
   if (!node || typeof node !== 'object' || depth > 12) throw rejected('The article contains formatting that is not allowed.');
   if (node.type === 'text') return cleanText(node);
   if (node.type === 'hardBreak') return {type: 'hardBreak'};
   if (!blocks.has(node.type)) throw rejected('The article contains formatting that is not allowed.');
+  if (node.type === 'table') return cleanTable(node, depth, ctx);
+  // Table cells hold text and lists only; images, video, quotes and headings belong outside the table.
+  if (ctx.inTable && !cellBlocks.has(node.type)) throw rejected('Table cells can only contain text and lists. Place images and videos outside the table.');
+  if (node.type === 'tableRow' || node.type === 'tableHeader' || node.type === 'tableCell') throw rejected('The table is not valid.');
+  if (node.type === 'video') {
+    // Only an approved YouTube id survives. A pasted URL is reduced to its id; anything else is refused.
+    const id = isYoutubeId(node.attrs?.videoId) ? node.attrs.videoId : youtubeId(node.attrs?.url);
+    if (!id) throw rejected('Use a YouTube link (youtube.com or youtu.be) for videos.');
+    return {type: 'video', attrs: {provider: 'youtube', videoId: id, title: String(node.attrs?.title ?? '').slice(0, 120), caption: String(node.attrs?.caption ?? '').slice(0, 300)}};
+  }
   if (node.type === 'horizontalRule') return {type: 'horizontalRule'};
   if (node.type === 'image') {
     const src = safeSrc(node.attrs?.src);
@@ -58,7 +93,7 @@ function cleanNode(node, depth) {
     const href = safeHref(node.attrs?.href);
     return {type: 'image', attrs: {src, alt: String(node.attrs?.alt ?? '').slice(0, 300), caption: String(node.attrs?.caption ?? '').slice(0, 500), ...(href ? {href} : {})}};
   }
-  const content = (node.content ?? []).map(child => cleanNode(child, depth + 1)).filter(Boolean);
+  const content = (node.content ?? []).map(child => cleanNode(child, depth + 1, ctx)).filter(Boolean);
   if (node.type === 'heading') {
     const level = [2, 3, 4].includes(Number(node.attrs?.level)) ? Number(node.attrs.level) : 2;
     return {type: 'heading', attrs: {level}, ...(content.length ? {content} : {})};
@@ -73,7 +108,8 @@ export function normalizeDocument(input) {
     : input;
   if (!source || source.type !== 'doc' || !Array.isArray(source.content)) throw rejected('The article format was not recognised.');
   if (JSON.stringify(source).length > 500000) throw rejected('The article is too long.');
-  return {type: 'doc', content: source.content.map(node => cleanNode(node, 0)).filter(Boolean)};
+  const ctx = {cells: 0, inTable: false};
+  return {type: 'doc', content: source.content.map(node => cleanNode(node, 0, ctx)).filter(Boolean)};
 }
 
 function renderInline(nodes = []) {
@@ -105,7 +141,27 @@ function renderBlock(node) {
     const caption = node.attrs.caption ? `<figcaption>${escapeHtml(node.attrs.caption)}</figcaption>` : '';
     return `<figure>${linked}${caption}</figure>`;
   }
+  if (node.type === 'table') return renderTable(node);
+  if (node.type === 'video') {
+    const title = escapeHtml(node.attrs.title || 'Video');
+    const caption = node.attrs.caption ? `<figcaption>${escapeHtml(node.attrs.caption)}</figcaption>` : '';
+    return `<figure class="article-video"><div class="video-frame"><iframe src="${youtubeEmbedSrc(node.attrs.videoId)}" title="${title}" loading="lazy" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"></iframe></div>${caption}</figure>`;
+  }
   return '';
+}
+
+function renderTable(node) {
+  const rows = node.content ?? [];
+  const isHead = row => Boolean(row?.content?.length) && row.content.every(cell => cell.type === 'tableHeader');
+  const head = isHead(rows[0]) && rows.length > 1 ? rows[0] : null;
+  const cell = (item, scope) => {
+    const tag = item.type === 'tableHeader' ? 'th' : 'td';
+    const attrs = `${item.attrs?.colspan > 1 ? ` colspan="${item.attrs.colspan}"` : ''}${item.attrs?.rowspan > 1 ? ` rowspan="${item.attrs.rowspan}"` : ''}${tag === 'th' && scope ? ` scope="${scope}"` : ''}`;
+    return `<${tag}${attrs}>${(item.content ?? []).map(renderBlock).join('')}</${tag}>`;
+  };
+  const row = (item, scope) => `<tr>${(item.content ?? []).map(entry => cell(entry, scope)).join('')}</tr>`;
+  const body = (head ? rows.slice(1) : rows).map(item => row(item, '')).join('');
+  return `<div class="article-table"><table>${head ? `<thead>${row(head, 'col')}</thead>` : ''}<tbody>${body}</tbody></table></div>`;
 }
 
 export function documentHtml(document) {
@@ -117,6 +173,7 @@ export function documentText(document) {
     if (!node) return '';
     if (node.type === 'text') return node.text;
     if (node.type === 'image') return `${node.attrs?.alt || ''} ${node.attrs?.caption || ''}`;
+    if (node.type === 'video') return `${node.attrs?.title || ''} ${node.attrs?.caption || ''}`;
     return (node.content ?? []).map(walk).join(node.type === 'paragraph' || node.type === 'heading' ? '\n' : ' ');
   };
   return walk(document).replace(/\s+/g, ' ').trim();

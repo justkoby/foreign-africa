@@ -101,38 +101,72 @@ export function readUpload(req) {
   });
 }
 
-export async function saveUpload({pool, config, clock, actor, upload}) {
+// Validates, optimises and writes an upload. Returns what to record in the database; touches no database row.
+async function storeFile(config, upload, onlyKind) {
   const blocked = mediaRootProblem(config.mediaRoot);
   if (blocked) throw fail(503, blocked);
   const sniffed = sniff(upload.buffer);
   if (!sniffed) throw fail(400, 'Upload a JPEG, PNG, WebP, GIF, or PDF. Other file types are not accepted.');
+  if (onlyKind && sniffed.kind !== onlyKind) throw fail(400, onlyKind === 'pdf' ? 'Replace a document with another PDF.' : 'Replace an image with another image.');
   const limit = sniffed.kind === 'pdf' ? pdfLimit : imageLimit;
   if (upload.buffer.length > limit) throw fail(413, 'That file is too large.');
-  const name = `${randomBytes(16).toString('hex')}.${sniffed.ext === 'jpg' && sniffed.kind === 'image' ? 'jpg' : sniffed.ext}`;
-  const relative = join('files', name);
-  const full = insideRoot(config.mediaRoot, relative);
-  if (!full) throw fail(400, 'The file could not be stored.');
   const optimised = await prepared(upload.buffer, sniffed.kind, sniffed.ext);
   const storedExt = sniffed.ext === 'png' || sniffed.ext === 'webp' || sniffed.ext === 'gif' || sniffed.ext === 'pdf' ? sniffed.ext : 'jpg';
-  const finalName = `${name.slice(0, name.lastIndexOf('.'))}.${storedExt}`;
-  const finalRelative = join('files', finalName).replaceAll('\\', '/');
+  const base = randomBytes(16).toString('hex');
+  const finalRelative = join('files', `${base}.${storedExt}`).replaceAll('\\', '/');
   const finalFull = insideRoot(config.mediaRoot, finalRelative);
+  if (!finalFull) throw fail(400, 'The file could not be stored.');
   await mkdir(join(config.mediaRoot, 'files'), {recursive: true});
   await writeFile(finalFull, optimised.buffer);
   let thumbPath = null;
   if (optimised.thumb) {
-    const thumbName = `${finalName.slice(0, finalName.lastIndexOf('.'))}.webp`;
-    thumbPath = join('thumbs', thumbName).replaceAll('\\', '/');
+    thumbPath = join('thumbs', `${base}.webp`).replaceAll('\\', '/');
     await mkdir(join(config.mediaRoot, 'thumbs'), {recursive: true});
     await writeFile(insideRoot(config.mediaRoot, thumbPath), optimised.thumb);
   }
-  const size = imageSize(optimised.buffer, storedExt === 'jpg' ? 'jpg' : storedExt);
+  const size = imageSize(optimised.buffer, storedExt);
+  return {storagePath: finalRelative, thumbPath, mime: sniffed.mime, kind: sniffed.kind, bytes: optimised.buffer.length, width: size.width, height: size.height, originalName: safeOriginalName(upload.filename)};
+}
+
+async function removeStored(config, ...paths) {
+  for (const relative of paths) {
+    const full = relative && config.mediaRoot && !String(relative).startsWith('site:') ? insideRoot(config.mediaRoot, relative) : '';
+    if (full) await rm(full, {force: true});
+  }
+}
+
+export async function saveUpload({pool, config, clock, actor, upload}) {
+  const stored = await storeFile(config, upload);
   const now = sqlTime(clock());
-  const [result] = await pool.execute(
-    'INSERT INTO media_assets (storage_path, mime_type, original_name, byte_size, width, height, thumb_path, alt_text, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [finalRelative, sniffed.mime === 'image/jpeg' && storedExt === 'jpg' ? 'image/jpeg' : sniffed.mime, safeOriginalName(upload.filename), optimised.buffer.length, size.width, size.height, thumbPath, '', actor.id, now],
-  );
-  return presentMedia({id: result.insertId, storage_path: finalRelative, mime_type: sniffed.mime, original_name: safeOriginalName(upload.filename), byte_size: optimised.buffer.length, width: size.width, height: size.height, thumb_path: thumbPath, alt_text: '', created_at: now});
+  try {
+    const [result] = await pool.execute(
+      'INSERT INTO media_assets (storage_path, mime_type, original_name, byte_size, width, height, thumb_path, alt_text, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [stored.storagePath, stored.mime, stored.originalName, stored.bytes, stored.width, stored.height, stored.thumbPath, '', actor.id, now],
+    );
+    return presentMedia({id: result.insertId, storage_path: stored.storagePath, mime_type: stored.mime, original_name: stored.originalName, byte_size: stored.bytes, width: stored.width, height: stored.height, thumb_path: stored.thumbPath, alt_text: '', created_by: actor.id, created_at: now});
+  } catch (error) {
+    await removeStored(config, stored.storagePath, stored.thumbPath);
+    throw error;
+  }
+}
+
+// Replace the file behind an existing library item. The id and URL stay the same, so every article that uses it
+// updates at once. Only a file of the same kind is accepted; the old file is removed only after the database change.
+export async function replaceUpload({pool, config, clock, id, upload}) {
+  const [rows] = await pool.execute('SELECT * FROM media_assets WHERE id = ? AND deleted_at IS NULL', [id]);
+  const row = rows[0];
+  if (!row) throw fail(404, 'That file was not found.');
+  if (String(row.storage_path).startsWith('site:')) throw fail(409, 'This is a built-in site image and cannot be replaced here. Upload a new image instead.');
+  const stored = await storeFile(config, upload, row.mime_type === 'application/pdf' ? 'pdf' : 'image');
+  try {
+    await pool.execute('UPDATE media_assets SET storage_path = ?, thumb_path = ?, mime_type = ?, byte_size = ?, width = ?, height = ?, original_name = ?, updated_at = ? WHERE id = ?', [stored.storagePath, stored.thumbPath, stored.mime, stored.bytes, stored.width, stored.height, stored.originalName, sqlTime(clock()), id]);
+  } catch (error) {
+    await removeStored(config, stored.storagePath, stored.thumbPath);
+    throw error;
+  }
+  await removeStored(config, row.storage_path, row.thumb_path);
+  const [fresh] = await pool.execute('SELECT * FROM media_assets WHERE id = ?', [id]);
+  return presentMedia(fresh[0]);
 }
 
 export function presentMedia(row) {
@@ -145,30 +179,74 @@ export function presentMedia(row) {
     width: row.width == null ? null : Number(row.width),
     height: row.height == null ? null : Number(row.height),
     alt: row.alt_text || '',
+    caption: row.caption || '',
+    title: row.title || '',
+    kind: row.mime_type === 'application/pdf' ? 'document' : 'image',
+    builtIn: String(row.storage_path).startsWith('site:'),
+    createdBy: row.created_by ? Number(row.created_by) : null,
+    version: String(row.storage_path).split('/').pop(),
     url: mediaUrl(id, row.storage_path),
     thumb: row.thumb_path ? `/media/${id}/thumb` : mediaUrl(id, row.storage_path),
     createdAt: row.created_at,
   };
 }
 
-export async function listMedia(pool, query) {
+const mediaColumns = 'id, storage_path, mime_type, original_name, byte_size, width, height, thumb_path, alt_text, caption, title, created_by, created_at';
+const imageCondition = "(mime_type LIKE 'image/%' OR (storage_path LIKE 'site:%' AND storage_path NOT LIKE '%.pdf'))";
+const sorts = {newest: 'id DESC', oldest: 'id ASC', name: 'original_name ASC, id DESC'};
+
+export async function listMedia(pool, {q, type, sort, page = 1, pageSize = 40} = {}) {
   const where = ['deleted_at IS NULL'];
   const params = [];
-  if (query) {
-    where.push("(original_name LIKE ? ESCAPE '!' OR alt_text LIKE ? ESCAPE '!')");
-    const like = likeContains(query);
-    params.push(like, like);
+  if (q) {
+    where.push("(original_name LIKE ? ESCAPE '!' OR alt_text LIKE ? ESCAPE '!' OR title LIKE ? ESCAPE '!' OR caption LIKE ? ESCAPE '!')");
+    const like = likeContains(q);
+    params.push(like, like, like, like);
   }
-  const [rows] = await pool.execute(`SELECT id, storage_path, mime_type, original_name, byte_size, width, height, thumb_path, alt_text, created_at FROM media_assets WHERE ${where.join(' AND ')} ORDER BY id DESC LIMIT 60`, params);
-  return rows.map(presentMedia);
+  if (type === 'image') where.push(imageCondition);
+  else if (type === 'document') where.push("mime_type = 'application/pdf'");
+  else if (type) throw fail(400, 'Unknown file type.');
+  const size = Math.min(Math.max(Math.trunc(Number(pageSize)) || 40, 1), 100);
+  const current = Math.max(Math.trunc(Number(page)) || 1, 1);
+  const order = sorts[sort] ?? sorts.newest;
+  const [rows] = await pool.execute(`SELECT ${mediaColumns} FROM media_assets WHERE ${where.join(' AND ')} ORDER BY ${order} LIMIT ${size} OFFSET ${(current - 1) * size}`, params);
+  const [total] = await pool.execute(`SELECT COUNT(*) AS n FROM media_assets WHERE ${where.join(' AND ')}`, params);
+  return {files: rows.map(presentMedia), total: Number(total[0].n), page: current, pageSize: size};
 }
 
-export async function updateMediaAlt({pool, id, alt}) {
-  const text = String(alt ?? '').slice(0, 300);
-  const [result] = await pool.execute('UPDATE media_assets SET alt_text = ? WHERE id = ? AND deleted_at IS NULL', [text, id]);
-  if (!result.affectedRows) throw fail(404, 'That file was not found.');
-  const [rows] = await pool.execute('SELECT * FROM media_assets WHERE id = ?', [id]);
+export async function getMedia(pool, id) {
+  const [rows] = await pool.execute('SELECT * FROM media_assets WHERE id = ? AND deleted_at IS NULL', [id]);
+  if (!rows[0]) throw fail(404, 'That file was not found.');
   return presentMedia(rows[0]);
+}
+
+// Title, caption and alt text. Staff who can edit any content may change any file; others only files they uploaded.
+export async function updateMedia({pool, clock, actor, canEditAny, id, input}) {
+  const [rows] = await pool.execute('SELECT created_by FROM media_assets WHERE id = ? AND deleted_at IS NULL', [id]);
+  if (!rows[0]) throw fail(404, 'That file was not found.');
+  if (!canEditAny && Number(rows[0].created_by) !== Number(actor.id)) throw fail(403, 'You can only edit files you uploaded.');
+  const sets = [];
+  const params = [];
+  for (const [key, column, max] of [['alt', 'alt_text', 300], ['caption', 'caption', 500], ['title', 'title', 200]]) {
+    if (input[key] === undefined) continue;
+    if (typeof input[key] !== 'string') throw fail(400, 'Enter text only.');
+    sets.push(`${column} = ?`); params.push(input[key].replace(/\s+/g, ' ').trim().slice(0, max));
+  }
+  if (!sets.length) throw fail(400, 'Nothing to change.');
+  await pool.execute(`UPDATE media_assets SET ${sets.join(', ')}, updated_at = ? WHERE id = ?`, [...params, sqlTime(clock()), id]);
+  return getMedia(pool, id);
+}
+
+// Everything that points at this file, for the "where is this used" panel and for safe deletion.
+export async function mediaUsage(pool, id) {
+  const [found] = await pool.execute('SELECT storage_path FROM media_assets WHERE id = ? AND deleted_at IS NULL', [id]);
+  if (!found[0]) throw fail(404, 'That file was not found.');
+  const marker = `%${mediaUrl(id, found[0].storage_path)}"%`;
+  const [rows] = await pool.execute(
+    'SELECT id, content_type, title, status, (featured_media_id = ?) AS is_featured, (social_image_id = ?) AS is_social, (body_html LIKE ? OR CAST(body_json AS CHAR) LIKE ?) AS in_body FROM content_items WHERE deleted_at IS NULL AND (featured_media_id = ? OR social_image_id = ? OR body_html LIKE ? OR CAST(body_json AS CHAR) LIKE ?) ORDER BY id DESC LIMIT 100',
+    [id, id, marker, marker, id, id, marker, marker],
+  );
+  return rows.map(item => ({kind: 'content', id: Number(item.id), type: item.content_type, title: item.title, status: item.status, as: [Number(item.is_featured) ? 'featured image' : '', Number(item.is_social) ? 'social image' : '', Number(item.in_body) ? 'in the article' : ''].filter(Boolean)}));
 }
 
 export async function mediaInUse(pool, id, storagePath) {
@@ -202,7 +280,7 @@ export async function openMedia(pool, config, id, thumb) {
   const relative = thumb && row.thumb_path ? row.thumb_path : row.storage_path;
   const full = config.mediaRoot ? insideRoot(config.mediaRoot, relative) : '';
   if (!full || !existsSync(full)) return null;
-  return {path: full, mime: thumb && row.thumb_path ? 'image/webp' : row.mime_type, stream: createReadStream(full)};
+  return {path: full, mime: thumb && row.thumb_path ? 'image/webp' : row.mime_type, etag: `"${basename(relative)}"`, stream: createReadStream(full)};
 }
 
 export async function registerSiteFile({pool, clock, actorId, publicPath, alt = ''}) {

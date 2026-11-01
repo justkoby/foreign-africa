@@ -4,20 +4,9 @@ Status: **nothing here has been verified on Hostinger.** "Code requires" is read
 
 ## 1. Scheduled publishing (no background worker assumed)
 
-**Design (implemented, tested on MySQL):** correctness never depends on a worker.
+Implemented as a hybrid: due items go live at query time, are tidied opportunistically by visitors and staff, and an optional **token-protected cron endpoint** (`POST /api/cron/publish`) keeps status timely when traffic is low. Promotion is atomic and idempotent. Full design, security properties, setup commands for Hostinger cron or an external scheduler, and the checklist of things to verify are in `docs/cms/CRON_SCHEDULING.md`. **No scheduler is configured or activated.**
 
-| Layer | What it does | Needs |
-|---|---|---|
-| Query-time visibility | A `scheduled` item whose `published_at` has passed is returned by every public query and the sitemap, exactly as if published. Implemented in `content-store.js` (`publicCondition`) | Nothing |
-| Opportunistic promotion | Public reads, the staff dashboard and staff lists call `promoteDue()`, at most one `UPDATE` per minute per process, which flips due items to `published` so staff screens show the truth. Failures are swallowed and never break a request | Nothing |
-| Cron (enhancement) | Tidies status even when nobody visits. Either `node server/promote-scheduled.js` or an authenticated `POST /api/staff/schedule/run` | Verify below |
-
-**Limits to know:** the Node process may sleep when idle on Hostinger. A scheduled item is still public the instant its time passes, because visibility is decided per request. Only the stored status label lags until the next request or cron run. Caches (CDN, browser) can delay visibility by their TTL; public JSON responses are not marked immutable.
-
-**Verify:**
-- hPanel → Advanced → **Cron Jobs** is available on your plan, and what the minimum interval is.
-- Whether a cron job can run `node` with Node 22 (a cron shell may default to a different Node). If not, use `curl` against a dedicated token endpoint. (Not built: the current endpoint needs a staff session. Say if you want a secret-token variant for external schedulers.)
-- Cron environment has the same `DB_*` variables as the app, or cron reads them from a file. `promote-scheduled.js` reads `.env.local` if present.
+**Verify:** Cron Jobs availability and minimum interval on your plan; which `curl`/`node` the cron shell sees; that the reverse proxy forwards `X-Forwarded-Proto` and `X-Forwarded-For`.
 
 ## 2. Persistent media storage outside deployment directories
 
@@ -40,6 +29,9 @@ Status: **nothing here has been verified on Hostinger.** "Code requires" is read
 | `STAGING_USER` `STAGING_PASSWORD` | Staging gate | Required when `APP_ENV=staging` |
 | `MEDIA_ROOT` | §2 | Leave empty until verified |
 | `LEGACY_FILE_EDITING` | `1` allows writing the file collections | Default: on in development, **off in staging and production**. Leave unset on Hostinger |
+| `CRON_SECRET` | Bearer token for `POST /api/cron/publish` (at least 32 characters, or the endpoint is disabled) | Optional. See `CRON_SCHEDULING.md`. Never commit it |
+| `DB_CONNECTION_LIMIT` | Pool size, 1–25, default 5 | Keep at or below the per-user connection cap |
+| `DB_MIGRATE_USER` `DB_MIGRATE_PASSWORD` | Optional second account with `CREATE, ALTER, REFERENCES` used only for startup preparation | Lets `DB_USER` have data-only privileges. See `DATABASE_COMPATIBILITY.md` |
 | `GEMINI_API_KEY` `GEMINI_MODEL` | Public Discovery (and later the editor assistant) | Optional |
 | `PORT` | Set by Hostinger | |
 | `CMS_PASSWORD` | **Local development only.** Ignored by the Express server | Remove from hPanel |
@@ -51,7 +43,7 @@ Verify: Hostinger's Node.js app UI accepts all of these, supports Node 22, and s
 
 **Code requires:** MySQL reachable at `DB_HOST:DB_PORT` from the Node app; utf8mb4; JSON columns; InnoDB foreign keys. The DB user needs `SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES` (migrations create and alter tables). The app never drops databases (the migrator refuses `DROP DATABASE`).
 
-**Confirmed by you:** MariaDB Server 11.8.9, `127.0.0.1:3306`, InnoDB. Full review and test matrix: `docs/cms/DATABASE_COMPATIBILITY.md`. The suite passes on the identical engine version (93 of 93) and on MySQL 8.0.
+**Confirmed by you:** MariaDB Server 11.8.9, `127.0.0.1:3306`, InnoDB. Full review and test matrix: `docs/cms/DATABASE_COMPATIBILITY.md`. The suite passes on the identical engine version (115 of 115) and on MySQL 8.0.
 
 **Verify:**
 - The CMS database user can `CREATE`, `ALTER`, add foreign keys and has a `max_user_connections` of at least 5 (lower `connectionLimit` in `server/db.js` otherwise).

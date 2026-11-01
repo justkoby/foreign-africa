@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createDisposableMysql} from './helpers/mysql.js';
 import {createPool} from '../server/db.js';
-import {migrate, migrationsDirectory} from '../server/migrate.js';
+import {migrate, migrationFiles, migrationsDirectory} from '../server/migrate.js';
 import {importTables} from '../server/backup.js';
 import {wordpressTables} from '../server/database-guard.js';
 
@@ -40,6 +40,6 @@ test('migrations and restores refuse a database that holds WordPress or foreign 
   await assert.rejects(() => migrate({pool: other, directory: migrationsDirectory}), /not a Foreign Africa CMS database/);
   assert.deepEqual(await tables(other), ['users']);
 
-  assert.equal((await migrate({pool: admin, directory: migrationsDirectory})).length, 5, 'an empty database is accepted');
+  assert.equal((await migrate({pool: admin, directory: migrationsDirectory})).length, migrationFiles(migrationsDirectory).length, 'an empty database is accepted');
   assert.deepEqual(await migrate({pool: admin, directory: migrationsDirectory}), [], 'a CMS database re-runs safely');
 });
