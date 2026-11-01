@@ -76,7 +76,7 @@ Hostinger's screens change; if a label differs, follow the intent and tell me wh
 | `GEMINI_API_KEY` `GEMINI_MODEL` | optional | Public search assistant only |
 | `CMS_PASSWORD`, `LEGACY_FILE_EDITING` | **leave unset** | |
 
-**Step 5: deploy** and read the log. Expect: `Applied 001_identity … 007_site_content.`, `Super administrator created for …`, `Seed finished …`, `Foreign Africa is listening on …`. Any `[fail]` line means the app deliberately did not start; fix the named variable and redeploy.
+**Step 5: deploy** and read the log. Expect: `Foreign Africa is listening on …` first (the app binds its port immediately), then `Applied 001_identity … 007_site_content.`, `Super administrator created for …`, `Seed finished …` and finally `Foreign Africa is ready.` Any `[fail]` line means the app is running but not ready: every page then shows a 503 that names the problem, and `/api/health` reports it. Fix the named variable and redeploy. If the deployment ever answers 503 with no explanation, see `STAGING_503_DIAGNOSIS.md`.
 
 **Step 6: first checks.** Open the temporary address in a private window: the browser must ask for the staging password. Sign in at `/admin`. Open **Settings**: every row should be `ok` (warnings for uploads and cron are expected at this point). Remove `BOOTSTRAP_ADMIN_PASSWORD`, redeploy.
 

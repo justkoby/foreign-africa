@@ -32,6 +32,13 @@ test('unsafe staging settings are blocked', () => {
   assert.deepEqual(failing({MEDIA_ROOT: '/home/u/hbuilds/app/media'}), ['media']);
 });
 
+test('a missing build is named, and blocks a hosted deployment but only warns in development', () => {
+  const hosted = deploymentChecks(readConfig(good), {}, {distBuilt: false});
+  assert.deepEqual(blockingChecks(hosted).map(check => check.id), ['build']);
+  assert.match(hosted.find(check => check.id === 'build').detail, /npm run build/);
+  assert.equal(deploymentChecks(readConfig({APP_ENV: 'development'}), {}, {distBuilt: false}).find(check => check.id === 'build').status, 'warn');
+});
+
 test('missing optional pieces warn but do not block; leftover secrets are flagged', () => {
   const checks = deploymentChecks(readConfig({...good, MEDIA_ROOT: '', CRON_SECRET: ''}), {BOOTSTRAP_ADMIN_PASSWORD: 'x', CMS_PASSWORD: 'y'});
   assert.deepEqual(blockingChecks(checks), []);

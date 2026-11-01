@@ -82,6 +82,8 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
     if (req.path.startsWith('/.well-known/acme-challenge/')) return next();
     // The scheduler authenticates with its own secret token; it cannot also send the staging Basic password.
     if (req.path === '/api/cron/publish') return next();
+    // Health reveals only whether the app and database are up, so it can be checked without the password.
+    if (req.path === '/api/health') return next();
     if (!config.stagingUser || !config.stagingPassword) return send(res, 503, {error: 'Staging access is not configured.'});
     const header = String(req.headers.authorization || '');
     const encoded = header.startsWith('Basic ') ? header.slice(6) : '';
@@ -221,12 +223,14 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
   }));
 
   app.get('/api/health', route(async (req, res) => {
-    if (!pool) return send(res, 503, {ok: false});
+    res.setHeader('Cache-Control', 'no-store');
+    if (!pool) return send(res, 503, {ok: false, phase: 'running', database: 'not_configured'});
     try {
       await store.databaseReachable(pool);
-      send(res, 200, {ok: true});
-    } catch {
-      send(res, 503, {ok: false});
+      send(res, 200, {ok: true, phase: 'running', database: 'ok'});
+    } catch (error) {
+      // The error code only (never the driver's message, which can name the user and host).
+      send(res, 503, {ok: false, phase: 'running', database: 'unreachable', code: String(error.code || error.name || 'unknown')});
     }
   }));
 
@@ -322,7 +326,7 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
   app.get('/api/staff/settings', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('settings.read')(req);
-    send(res, 200, {appEnv: config.appEnv, publicSiteUrl: config.publicSiteUrl, mediaConfigured: Boolean(config.mediaRoot), cookieSecure: config.cookieSecure, cronConfigured: Boolean(config.cronSecret), dbConnectionLimit: config.dbConnectionLimit, checks: deploymentChecks(config)});
+    send(res, 200, {appEnv: config.appEnv, publicSiteUrl: config.publicSiteUrl, mediaConfigured: Boolean(config.mediaRoot), cookieSecure: config.cookieSecure, cronConfigured: Boolean(config.cronSecret), dbConnectionLimit: config.dbConnectionLimit, checks: deploymentChecks(config, process.env, {distBuilt: Boolean(shell && shell())})});
   }));
 
   app.get('/api/staff/users', route(async (req, res) => {

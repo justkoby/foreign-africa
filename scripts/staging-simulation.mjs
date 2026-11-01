@@ -12,12 +12,12 @@ const TEMP='https://fa-staging-123.hostingersite.com';const port=4186;const base
 const CRON='c'.repeat(40);const basic='Basic '+Buffer.from('preview:a-long-staging-password').toString('base64');
 const baseEnv={...process.env,PORT:String(port),APP_ENV:'staging',PUBLIC_SITE_URL:TEMP,SESSION_SECRET:'s'.repeat(40),STAGING_USER:'preview',STAGING_PASSWORD:'a-long-staging-password',DB_HOST:'127.0.0.1',DB_PORT:String(db.port),DB_USER:'root',DB_PASSWORD:'',DB_NAME:db.dbName,DB_CONNECTION_LIMIT:'3',MEDIA_ROOT:media,CRON_SECRET:CRON,PASSWORD_COST:'4'};
 const out=[];const ok=(n,c,x='')=>out.push(`${c?'PASS':'FAIL'}  ${n}${x?'  — '+x:''}`);
-async function boot(extra){const env={...baseEnv,...extra};const p=spawn('node',['server/index.js'],{cwd:new URL('..',import.meta.url).pathname,env,stdio:['ignore','pipe','pipe']});let log='';p.stdout.on('data',d=>log+=d);p.stderr.on('data',d=>log+=d);for(let i=0;i<80&&!log.includes('listening');i++)await new Promise(r=>setTimeout(r,500));return {p,log:()=>log}}
+async function boot(extra){const env={...baseEnv,...extra};const p=spawn('node',['server/index.js'],{cwd:new URL('..',import.meta.url).pathname,env,stdio:['ignore','pipe','pipe']});let log='';p.stdout.on('data',d=>log+=d);p.stderr.on('data',d=>log+=d);for(let i=0;i<80&&!log.includes('ready');i++)await new Promise(r=>setTimeout(r,500));return {p,log:()=>log}}
 const hdr=(h={})=>({'X-Forwarded-Proto':'https','X-Forwarded-For':'203.0.113.9',Origin:TEMP,...h});
 const call=async(path,{method='GET',body,cookie,auth=true,headers={},form}={})=>{const r=await fetch(base+path,{method,headers:{...hdr(),...(auth?{Authorization:basic}:{}),...(form?{}:{'Content-Type':'application/json'}),...(cookie?{Cookie:cookie}:{}),...headers},body:form??(body&&JSON.stringify(body))});const buf=Buffer.from(await r.arrayBuffer());let data={};try{data=JSON.parse(buf.toString())}catch{}return {status:r.status,data,headers:r.headers,buf}};
 try{
 let A=await boot({PREPARE_DATABASE:'1',BOOTSTRAP_ADMIN_EMAIL:'ada@foreignafrica.org',BOOTSTRAP_ADMIN_PASSWORD:'correct-horse-battery'});
-ok('first start: migrations, admin, seed, listening',/Applied 001_identity.*007_site_content/.test(A.log())&&/Super administrator created/.test(A.log())&&/listening/.test(A.log()),A.log().split('\n').filter(l=>/\[(warn|fail)\]/.test(l)).join(' | ').slice(0,120));
+ok('first start: migrations, admin, seed, ready',/Applied 001_identity.*007_site_content/.test(A.log())&&/Super administrator created/.test(A.log())&&/ready/.test(A.log()),A.log().split('\n').filter(l=>/\[(warn|fail)\]/.test(l)).join(' | ').slice(0,120));
 const noAuth=await call('/',{auth:false});ok('no staging password: 401 + noindex',noAuth.status===401&&/noindex/.test(noAuth.headers.get('x-robots-tag')));
 const login=await call('/api/staff/login',{method:'POST',body:{email:'ada@foreignafrica.org',password:'correct-horse-battery'}});
 const sc=login.headers.get('set-cookie')||'';ok('login over the temporary https address',login.status===200);
@@ -39,7 +39,7 @@ const pubPage=await call('/api/public/content/news/staging-article?format=html')
 A.p.kill();await new Promise(r=>setTimeout(r,1500));
 // restart = a new process (what a redeploy does), same upload folder and database
 const B=await boot({});
-ok('second start (no PREPARE_DATABASE): listening',/listening/.test(B.log()));
+ok('second start (no PREPARE_DATABASE): ready',/ready/.test(B.log()));
 const login2=await call('/api/staff/login',{method:'POST',body:{email:'ada@foreignafrica.org',password:'correct-horse-battery'}});const cookie2=login2.headers.get('set-cookie').split(';')[0];
 const h2=await call('/api/staff/health',{cookie:cookie2});ok('after a restart: upload folder proven persistent',h2.data.media.persistence==='verified'&&/survived/.test(h2.data.media.detail),h2.data.media.detail.slice(0,70));
 ok('the uploaded file is still served after the restart',(await call(`/media/${id}`)).status===200);

@@ -10,8 +10,8 @@ import {join} from 'node:path';
 export async function prepareDatabase(config, env = process.env) {
   if (env.PREPARE_DATABASE !== '1') return {ran: false};
   if (!databaseConfigured(config) || !config.sessionSecret) {
-    console.error('PREPARE_DATABASE=1 requires DB_HOST, DB_USER, DB_NAME, and SESSION_SECRET.');
-    process.exit(1);
+    // Thrown, not process.exit: the caller reports it. An exit before listening shows the host only a bare 503.
+    throw Object.assign(new Error('PREPARE_DATABASE=1 requires DB_HOST, DB_USER, DB_NAME and SESSION_SECRET to be set.'), {status: 400});
   }
   // Startup preparation (migrations, first admin, seed) uses the migration account when one is configured.
   const pool = createPool(migrationConfig(config));
