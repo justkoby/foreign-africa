@@ -11,6 +11,7 @@ import {createHandler as createCmsHandler} from '../api/cms.js';
 import {createCms, projectRoot} from './cms-service.js';
 import {deploymentChecks} from './deployment-checks.js';
 import {buildFreshness} from './build-stamp.js';
+import {buildOverview} from './overview.js';
 import {createTerm, deleteTerm, listTerms, updateTerm} from './terms-store.js';
 import * as siteStore from './site-store.js';
 import {injectSiteData} from './site-inject.js';
@@ -299,6 +300,14 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
     let database = 'ok';
     try { await store.databaseReachable(pool); } catch { database = 'failed'; }
     send(res, 200, {...counts, health: {database, media: await storageCheck(config), backup: {status: 'unknown', detail: 'Hostinger backups are managed in hPanel. This screen cannot confirm them.'}}});
+  }));
+
+  app.get('/api/staff/overview', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('content.read')(req);
+    await store.promoteDue(pool, clock);
+    res.setHeader('Cache-Control', 'no-store');
+    send(res, 200, await buildOverview({pool, config, user, clock, shell}));
   }));
 
   app.get('/api/staff/health', route(async (req, res) => {

@@ -188,7 +188,13 @@ export async function listContent(pool, {type, status, q, includeDrafts, page = 
   const order = orders[sort] || orders.updated;
   const [countRows] = await pool.execute(`SELECT COUNT(*) AS n FROM content_items c WHERE ${where.join(' AND ')}`, params);
   const items = await load(pool, `${where.join(' AND ')} ORDER BY ${order} LIMIT ${size} OFFSET ${(current - 1) * size}`, params);
-  return {items, total: Number(countRows[0].n), page: current, pageSize: size};
+  // Per-status totals for the listing tabs. They ignore the status filter (so every tab shows its own number) but follow the type.
+  let counts = null;
+  if (includeDrafts) {
+    const [rows] = await pool.execute(`SELECT c.status, COUNT(*) AS n FROM content_items c WHERE c.deleted_at IS NULL${type ? ' AND c.content_type = ?' : ''} GROUP BY c.status`, type ? [type] : []);
+    counts = Object.fromEntries(rows.map(row => [row.status, Number(row.n)]));
+  }
+  return {items, total: Number(countRows[0].n), page: current, pageSize: size, ...(counts ? {counts} : {})};
 }
 
 function canEdit(actor, item) {

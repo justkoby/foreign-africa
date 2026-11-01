@@ -1,3 +1,20 @@
+# Studio design system (v2)
+
+Admin only (`src/studio/ui/ui.css`, `src/studio/ui/index.jsx`). The public site never loads it; its Mark Pro typography is untouched.
+
+- **Direction:** WordPress-level function in a modern SaaS dashboard: warm grey canvas, white cards, 12/18px radii, soft shadows, pill chips, deep navy primary actions, muted gold accent on the active nav item. No heavy dark areas or gradients.
+- **Type:** Inter 400-700 (`@fontsource/inter`). Page title 30px, section 18-22px, card/row 15px, body 14px, labels 12-13px.
+- **Tokens:** `--fa-*` colour, status (green/blue/amber/violet/red/slate), radius, shadow, focus ring; `--fs-*` scale.
+- **Components:** Button/IconButton, Chip/StatusChip, Avatar, Card/KpiCard/PageHeader, SearchField, Select, Field, Switch, Tabs, Pagination, EmptyState, Skeleton, Notice, Menu, Modal, toasts and confirmation dialogs (`useFeedback`). Icons are Lucide; no emoji.
+- **Shell:** collapsible grouped sidebar (unfinished modules grouped under Site content and Engagement), sticky top bar with breadcrumbs, search, New menu, account menu. Off-canvas under 900px.
+- **Screens on the system:** Login, Dashboard (real data via `GET /api/staff/overview`), content listings (status tabs with real counts, search, sort, bulk actions), editor (slim action bar, large title, paper canvas, collapsible tabbed panel: Document / SEO / History; Tiptap, autosave, revisions, media insertion and permissions unchanged), media library (grid/list, truncated names, "Size unavailable" instead of a wrong "0 KB"), users (table, role/status chips, add-user dialog), account, activity, system health, settings.
+- **Not yet restyled:** hero/homepage editors, terms, submissions and legacy collections use the old layout under a `.fa-legacy` bridge that applies the new tokens.
+- **Deliberately not built:** no invented analytics or trends; no page builder.
+
+---
+
+## Earlier notes
+
 # Foreign Africa CMS: Admin Design System (draft)
 
 > Status: Inter is now applied to `/admin` and `/editor` (self-hosted via `@fontsource/inter`, latin 400/500/600). The rest of this document is the target for roadmap step 2. Navigation below must be reconciled with the existing Studio module list and the unbuilt-module placeholders.
