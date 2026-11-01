@@ -15,7 +15,7 @@ export const opportunityPathways = [
     futureHeading:'When a fellowship call is published',
     futureDetails:['Eligibility and selection criteria','Research focus and participation format','Dates and expected commitment','Application instructions and any support available'],
     related:{label:'Explore our research',href:'/policy-briefs/'},
-    sourceUrl:'https://foreignafrica.org/fellowships/',listingState:'overview',
+    sourceUrl:'https://foreignafrica.org/fellowships/',listingState:'overview',formId:null,actionMode:'enquiry',
   },
   {
     id:'calls-for-papers',path:'/calls-for-papers/',title:'Calls for Papers',titleLines:['Calls for','Papers'],icon:'papers',label:'RESEARCH & CONTRIBUTION',
@@ -30,7 +30,7 @@ export const opportunityPathways = [
     futureHeading:'When a research call is published',
     futureDetails:['The research theme and submission scope','Author eligibility and originality requirements','Format, word limits and submission deadline','Review process and publication information'],
     related:{label:'Read our commentaries',href:'/blog/'},
-    sourceUrl:'https://foreignafrica.org/calls-for-papers/',listingState:'overview',
+    sourceUrl:'https://foreignafrica.org/calls-for-papers/',listingState:'overview',formId:null,actionMode:'enquiry',
   },
   {
     id:'volunteer-opportunities',path:'/volunteer-opportunities/',title:'Volunteer Opportunities',titleLines:['Volunteer','Opportunities'],icon:'volunteer',label:'SKILLS & SERVICE',
@@ -45,7 +45,7 @@ export const opportunityPathways = [
     futureHeading:'When a volunteer role is published',
     futureDetails:['The role and skills required','Expected time commitment and duration','Location or remote participation arrangements','The contact and recruitment process'],
     related:{label:'Meet our people',href:'/our-people/'},
-    sourceUrl:'https://foreignafrica.org/volunteer-opportunities/',listingState:'overview',
+    sourceUrl:'https://foreignafrica.org/volunteer-opportunities/',listingState:'overview',formId:null,actionMode:'enquiry',
   },
   {
     id:'enterprise-week',path:'/foreign-africa-enterprise-week-few-2/',title:'Foreign Africa Enterprise Week',shortTitle:'Enterprise Week',titleLines:['Foreign Africa','Enterprise Week'],icon:'enterprise',label:'ENTERPRISE & CONNECTION',
@@ -60,15 +60,28 @@ export const opportunityPathways = [
     futureHeading:'Before planning your participation',
     futureDetails:['Edition dates and venue','The programme and session information','Participation and exhibition arrangements','Registration details and any published fees'],
     related:{label:'Explore our partners',href:'/partners/'},
-    sourceUrl:'https://foreignafrica.org/foreign-africa-enterprise-week-few-2/',listingState:'overview',
+    sourceUrl:'https://foreignafrica.org/foreign-africa-enterprise-week-few-2/',listingState:'overview',formId:null,actionMode:'enquiry',
   },
 ];
 
-export function getOpportunityPathway(id){return opportunityPathways.find(item=>item.id===id)}
+// Programme description adapted from the published RIP overview, 25 October 2026.
+export const internshipProgramme={
+ id:'internship',path:'/remote-internship-programme-rip/',title:'Remote Internship Programme',shortTitle:'Internships',titleLines:['Remote Internship','Programme'],icon:'fellowship',label:'LEARNING & PROFESSIONAL DEVELOPMENT',
+ tagline:['Build experience.','Create impact.'],
+ summary:'Hands-on experience for students and early-career professionals, connecting ideas with programmes, partnerships and policy.',
+ overview:'The Remote Internship Programme (RIP) is Foreign Africa’s flagship professional development programme, delivered through the Foreign Africa Impact Studio (FAIS). The competitive programme attracts applicants from across Africa and beyond. Interns, now Junior Associates, work with experienced professionals while preparing for leadership in diplomacy, development, entrepreneurship and international affairs.',
+ audience:'Outstanding students and early-career professionals from across Africa and beyond.',
+ themes:[{title:'Research & policy',text:'Practical experience in foreign policy analysis, research and publications.',icon:'research'},{title:'Programmes & delivery',text:'Experience in project design, implementation and conference delivery.',icon:'dialogue'},{title:'Communications & partnerships',text:'Work connecting strategic communications with partnership development.',icon:'network'}],
+ status:'Ask about the next intake',statusDetail:'The published overview does not specify a current application window, deadline or application form. Contact the team for current intake information.',
+ enquiryLabel:'Ask about internships',subject:'Remote Internship Programme enquiry',
+ futureHeading:'Before applying to a future intake',futureDetails:['Eligibility and selection criteria','Application window and required documents','Duration, working arrangements and commitment','Any remuneration, support and participation costs'],
+ related:{label:'Meet the Junior Associates',href:'/junior-associates/'},sourceUrl:'https://foreignafrica.org/remote-internship-programme-rip/',listingState:'overview',formId:null,actionMode:'enquiry',
+};
+export function getOpportunityPathway(id){return [...opportunityPathways,internshipProgramme].find(item=>item.id===id)}
 export function enquiryHref(item){return `mailto:info@foreignafrica.org?subject=${encodeURIComponent(item.subject)}`}
 export const opportunityFaqs = [
   {question:'Can I apply or register now?',answer:'These pages introduce the pathways. They do not list a current application call, volunteer role or Enterprise Week registration. Email the team to ask about current or future participation.'},
   {question:'Where will I find dates and requirements?',answer:'A published call, role or event edition should include its own dates, eligibility, participation arrangements and next steps. Those details are not listed here yet.'},
   {question:'How can I ask about an opportunity?',answer:'Use the email enquiry link on the relevant page. It opens a draft addressed to info@foreignafrica.org; you can edit it and send it from your own email app.'},
-  {question:'Where can I find internship information?',answer:'The Remote Internship Programme has a separate programme page. Visit that page for its published information and contact the team about current availability.',href:'https://foreignafrica.org/remote-internship-programme-rip/',linkLabel:'Remote Internship Programme'},
+  {question:'Where can I find internship information?',answer:'The Remote Internship Programme has a separate programme page. Visit that page for its published information and contact the team about current availability.',href:'/remote-internship-programme-rip/',linkLabel:'Remote Internship Programme'},
 ];

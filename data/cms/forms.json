@@ -1,0 +1,326 @@
+[
+  {
+    "id": "fellowship_application",
+    "purpose": "fellowship_application",
+    "title": "Fellowship application",
+    "status": "draft",
+    "success": "Your application has been received. This is not a selection decision.",
+    "fields": [
+      {
+        "id": "name",
+        "label": "Your name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "email",
+        "label": "Email address",
+        "type": "email",
+        "required": true
+      },
+      {
+        "id": "background",
+        "label": "Background",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "interests",
+        "label": "Research interests",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "statement",
+        "label": "Statement",
+        "type": "textarea",
+        "required": true
+      }
+    ]
+  },
+  {
+    "id": "internship_application",
+    "purpose": "internship_application",
+    "title": "Internship application",
+    "status": "draft",
+    "success": "Your interest has been received. This is not an offer.",
+    "fields": [
+      {
+        "id": "name",
+        "label": "Your name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "email",
+        "label": "Email address",
+        "type": "email",
+        "required": true
+      },
+      {
+        "id": "background",
+        "label": "Background",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "interest",
+        "label": "Why this programme",
+        "type": "textarea",
+        "required": true
+      }
+    ]
+  },
+  {
+    "id": "paper_submission",
+    "purpose": "paper_submission",
+    "title": "Paper submission",
+    "status": "draft",
+    "success": "Your paper has been received. This is not an acceptance.",
+    "fields": [
+      {
+        "id": "name",
+        "label": "Corresponding author",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "email",
+        "label": "Email address",
+        "type": "email",
+        "required": true
+      },
+      {
+        "id": "title",
+        "label": "Paper title",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "abstract",
+        "label": "Abstract",
+        "type": "textarea",
+        "required": true
+      }
+    ]
+  },
+  {
+    "id": "volunteer_interest",
+    "purpose": "volunteer_interest",
+    "title": "Volunteer interest",
+    "status": "draft",
+    "success": "Your interest has been received.",
+    "fields": [
+      {
+        "id": "name",
+        "label": "Your name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "email",
+        "label": "Email address",
+        "type": "email",
+        "required": true
+      },
+      {
+        "id": "skills",
+        "label": "Skills",
+        "type": "textarea",
+        "required": true
+      },
+      {
+        "id": "availability",
+        "label": "Availability",
+        "type": "text",
+        "required": false
+      }
+    ]
+  },
+  {
+    "id": "event_registration",
+    "purpose": "event_registration",
+    "title": "Event registration",
+    "status": "draft",
+    "success": "Your registration has been received. This does not reserve a seat.",
+    "fields": [
+      {
+        "id": "name",
+        "label": "Your name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "email",
+        "label": "Email address",
+        "type": "email",
+        "required": true
+      },
+      {
+        "id": "organisation",
+        "label": "Organisation",
+        "type": "text",
+        "required": false
+      }
+    ]
+  },
+  {
+    "id": "partnership_enquiry",
+    "purpose": "partnership_enquiry",
+    "title": "Partnership enquiry",
+    "status": "draft",
+    "success": "Your enquiry has been received.",
+    "fields": [
+      {
+        "id": "name",
+        "label": "Your name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "email",
+        "label": "Email address",
+        "type": "email",
+        "required": true
+      },
+      {
+        "id": "organisation",
+        "label": "Organisation",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "message",
+        "label": "Proposed collaboration",
+        "type": "textarea",
+        "required": true
+      }
+    ]
+  },
+  {
+    "id": "sponsorship_enquiry",
+    "purpose": "sponsorship_enquiry",
+    "title": "Sponsorship enquiry",
+    "status": "draft",
+    "success": "Your enquiry has been received. This is not a payment.",
+    "fields": [
+      {
+        "id": "name",
+        "label": "Your name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "email",
+        "label": "Email address",
+        "type": "email",
+        "required": true
+      },
+      {
+        "id": "organisation",
+        "label": "Organisation",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "message",
+        "label": "Proposed support",
+        "type": "textarea",
+        "required": true
+      }
+    ]
+  },
+  {
+    "id": "speaker_request",
+    "purpose": "speaker_request",
+    "title": "Speaker request",
+    "status": "draft",
+    "success": "Your request has been received. This does not confirm a speaker.",
+    "fields": [
+      {
+        "id": "name",
+        "label": "Your name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "email",
+        "label": "Email address",
+        "type": "email",
+        "required": true
+      },
+      {
+        "id": "organisation",
+        "label": "Host organisation",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "message",
+        "label": "Event, topic and proposed dates",
+        "type": "textarea",
+        "required": true
+      }
+    ]
+  },
+  {
+    "id": "general_enquiry",
+    "purpose": "general_enquiry",
+    "title": "General enquiry",
+    "status": "draft",
+    "success": "Your enquiry has been received.",
+    "fields": [
+      {
+        "id": "name",
+        "label": "Your name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "email",
+        "label": "Email address",
+        "type": "email",
+        "required": true
+      },
+      {
+        "id": "organisation",
+        "label": "Organisation",
+        "type": "text",
+        "required": false
+      },
+      {
+        "id": "message",
+        "label": "Your message",
+        "type": "textarea",
+        "required": true
+      }
+    ]
+  },
+  {
+    "id": "job_application",
+    "purpose": "job_application",
+    "title": "Job application",
+    "status": "draft",
+    "success": "Your application has been received.",
+    "fields": [
+      {
+        "id": "name",
+        "label": "Your name",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "email",
+        "label": "Email address",
+        "type": "email",
+        "required": true
+      },
+      {
+        "id": "message",
+        "label": "Why you are applying",
+        "type": "textarea",
+        "required": true
+      }
+    ]
+  }
+]

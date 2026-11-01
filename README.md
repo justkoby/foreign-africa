@@ -85,8 +85,22 @@ Navigation, homepage policy links and Smart Discovery now point to these local r
 
 ## Commentaries archive
 
-The `/blog/` listing now includes a featured commentary, twelve source-backed publication records, local WebP images, named bylines, approximate reading times, keyword/topic/year filters, date ordering and progressive loading. Original article links are preserved; article bodies remain on the existing WordPress site. `/commentaries/` and `/category/blog/` are aliases. Navigation and Smart Discovery connect to the archive and source articles. See `docs/commentaries-update.md` for provenance, validation and the WordPress cutover requirement.
+The `/blog/` listing now includes a featured commentary, twelve source-backed publication records, local WebP images, named bylines, approximate reading times, keyword/topic/year filters, date ordering and progressive loading. All twelve full article bodies and 46 inline images are served locally at their original article slugs, with `/blog/<slug>/` aliases and a responsive reading layout. `/commentaries/` and `/category/blog/` are aliases. Navigation and Smart Discovery connect to the local archive and articles. See `docs/commentaries-update.md` for provenance, validation and the WordPress cutover requirement.
 
 ## Opportunities overviews
 
 The homepage now introduces Fellowships, Calls for Papers, Volunteer Opportunities and Enterprise Week through shared pathway cards. `/opportunities/` and four local overview pages provide clear programme introductions, status messages, focus areas, email enquiries and related routes. Existing opportunity URLs are retained; the Remote Internship Programme keeps its separate original page. No live call, application, registration, email sending or subscription backend is implied. See `docs/opportunities-update.md` for content provenance, availability handling and publishing requirements.
+
+## News, Events and required CMS forms
+
+`/news/` now presents five published reports with a featured story, search/category controls and programme updates. `/events/` separates upcoming listings from past announcements, with three local event-detail routes. Original publication dates and event schedules remain distinct; expired registration links are not exposed as active actions. Read `docs/news-events-update.md` for source and migration scope.
+
+The future CMS must include configurable forms for fellowships, papers, volunteering and event registration. Cursor should read `docs/cms-handoff.md`, `docs/cursor-cms-forms-spec.md` and `cms/form-definition.schema.json` before building the dashboard. These specify the builder, versions, private submissions/review and publication rules; no forms backend is connected yet.
+
+## Engage and Contact
+
+`/engage/` connects the local Partner with us, Sponsor a programme, Book a speaker, Careers and Contact pages. Contact preserves the published departmental emails and provides a browser-only email-draft composer with topic handoff, validation and Copy fallback. It sends and stores no submission. The stale Institutional Partnerships Officer search result is labelled expired based on its source detail page. See `docs/engage-update.md`.
+
+The required future CMS forms scope now includes partnership/sponsorship enquiries, speaker requests, general contact and job applications as well as the earlier four types. Cursor should follow the updated master handoff, forms specification and JSON schema before building actual submission/review services.
+
+The Remote Internship Programme is now built into `/remote-internship-programme-rip/`; opportunity navigation, homepage, hero, People, Careers and FAQ links stay local. Future internship intake forms are included in the CMS form contract. See `docs/local-content-update.md`.

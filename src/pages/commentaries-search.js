@@ -4,9 +4,9 @@ export const commentaryTopics=['All topics','Diplomacy','Governance & society','
 export const commentaryYears=[...new Set(commentaries.map(item=>item.date.slice(0,4)))].sort().reverse();
 const normalise=value=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
 
-export function findCommentaries({query='',topic='All topics',year='All years',sort='newest'}={}){
+export function findCommentaries({query='',topic='All topics',year='All years',sort='newest',items=commentaries}={}){
   const words=normalise(query).split(/\s+/).filter(Boolean);
-  return commentaries.filter(item=>
+  return items.filter(item=>
     (topic==='All topics'||item.topic===topic)&&
     (year==='All years'||item.date.startsWith(year))&&
     words.every(word=>normalise([item.title,item.summary,item.topic,...item.tags,...item.authors].join(' ')).includes(word))

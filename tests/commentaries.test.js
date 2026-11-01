@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync} from 'node:fs';
-import {commentaries} from '../src/pages/commentaries-content.js';
+import {commentaries,commentaryUrl} from '../src/pages/commentaries-content.js';
 import {findCommentaries,commentaryDate,commentaryTopics} from '../src/pages/commentaries-search.js';
 import {resolvePage} from '../src/pages/routes.js';
 import {discover} from '../src/discovery.js';
@@ -41,5 +41,5 @@ test('all imported commentaries preserve published destinations and local images
 
 test('blog aliases and discovery connect visitors to the correct archive and articles',()=>{
   for(const path of ['/blog/','/blog','/commentaries/','/category/blog/'])assert.equal(resolvePage(path).type,'commentaries');
-  assert.equal(discover('BRICS','Research').results[0].url,commentaries[0].sourceUrl);
+  assert.equal(discover('BRICS','Research').results[0].url,commentaryUrl(commentaries[0]));
 });

@@ -1,5 +1,6 @@
 const origin = 'https://foreignafrica.org';
-export const page = (slug) => `${origin}/${slug}/`;
+const localEngageSlugs=new Set(['remote-internship-programme-rip','engage','partner-with-us','sponsor-a-programme','book-a-speaker','careers','contact']);
+export const page = (slug) => localEngageSlugs.has(slug)?`/${slug}/`:`${origin}/${slug}/`;
 export const resources = [
  {title:'Policy briefs',type:'Research',description:'Evidence and analysis on the policies shaping Africa’s economic future.',url:'/policy-briefs/'},
  {title:'Commentaries',type:'Research',description:'Perspectives on enterprise, diplomacy and economic transformation.',url:'/blog/'},

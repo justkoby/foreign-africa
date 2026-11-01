@@ -29,7 +29,7 @@ export function discover(query,category='All') {
   let score=tokens.reduce((n,w)=>n+(title.includes(w)?(topics.opportunity.includes(w)?1:5):body.includes(w)?0.5:0),0);
   score+=themes.reduce((n,t)=>n+(r.topics.includes(t)?(t==='opportunity'?0.5:4):0),0);
   return {...r,score};
- }).filter(r=>!tokens.length||r.score>0).sort((a,b)=>b.score-a.score);
+ }).filter(r=>!tokens.length||r.score>0).sort((a,b)=>b.score-a.score||((['Programme','Opportunity'].includes(b.type)?2:b.url.startsWith('/?story=')?1:0)-(['Programme','Opportunity'].includes(a.type)?2:a.url.startsWith('/?story=')?1:0)));
  let message=recording?'Recording search will be available once videos and transcripts have been added. No recordings are indexed yet.':matches.length?'These pages are the closest matches in our current directory.':'I couldn’t find a matching page in the current directory. Try a different topic or contact the team.';
  const notice='Programme pages contain the latest details. Application availability, deadlines and eligibility have not been verified in this directory.';
  return {results:matches,message,notice:matches.some(r=>r.type==='Opportunity')?notice:null,canAnswer:tokens.length>0&&matches.length>0&&!recording};
