@@ -68,9 +68,9 @@ test('the staging initialisation procedure, end to end on a replica of the Hosti
     app.stop();
   });
 
-  await t.test('2. initialisation is refused without the typed confirmation, and with the wrong one', async () => {
-    for (const confirm of [undefined, 'u777654758_wp_live', 'wrong']) {
-      const app = await boot({PREPARE_DATABASE: '1', BOOTSTRAP_ADMIN_EMAIL: 'ada@foreignafrica.org', BOOTSTRAP_ADMIN_PASSWORD: ADMIN_PASSWORD, ...(confirm ? {PREPARE_DATABASE_CONFIRM: confirm} : {})});
+  await t.test('2. initialisation is refused when the typed confirmation names a different database', async () => {
+    for (const confirm of ['u777654758_wp_live', 'wrong']) {
+      const app = await boot({PREPARE_DATABASE: '1', BOOTSTRAP_ADMIN_EMAIL: 'ada@foreignafrica.org', BOOTSTRAP_ADMIN_PASSWORD: ADMIN_PASSWORD, PREPARE_DATABASE_CONFIRM: confirm});
       const page = await app.get('/');
       assert.equal(page.status, 503);
       assert.match(page.text, /PREPARE_DATABASE_CONFIRM/);
@@ -122,6 +122,8 @@ test('the staging initialisation procedure, end to end on a replica of the Hosti
     const basic = `Basic ${Buffer.from('preview:a-long-staging-password').toString('base64')}`;
     const call = async (path, options = {}) => { const r = await fetch(`http://127.0.0.1:${ready.port}${path}`, {...options, headers: {'Content-Type': 'application/json', 'X-Forwarded-Proto': 'https', Origin: origin, Authorization: basic, ...(options.headers ?? {})}}); return {status: r.status, data: await r.json().catch(() => ({})), headers: r.headers}; };
     assert.equal((await call('/api/staff/login', {method: 'POST', body: JSON.stringify({email: 'ada@foreignafrica.org', password: 'wrong-password-123'})})).status, 401);
+    // No default credentials exist: the old documented fallback account must not be able to sign in.
+    assert.equal((await call('/api/staff/login', {method: 'POST', body: JSON.stringify({email: 'info@foreignafrica.org', password: 'ChangeMeAdmin2026!'})})).status, 401);
     const login = await call('/api/staff/login', {method: 'POST', body: JSON.stringify({email: 'ada@foreignafrica.org', password: ADMIN_PASSWORD})});
     assert.equal(login.status, 200);
     assert.equal(login.data.user.role, 'super_admin');
@@ -138,11 +140,21 @@ test('the staging initialisation procedure, end to end on a replica of the Hosti
     const again = await boot({PREPARE_DATABASE: '1', PREPARE_DATABASE_CONFIRM: CMS_DB, BOOTSTRAP_ADMIN_EMAIL: 'ada@foreignafrica.org', BOOTSTRAP_ADMIN_PASSWORD: ADMIN_PASSWORD});
     t.after(() => again.stop());
     assert.match(again.log(), /Migrations are already up to date/);
-    assert.match(again.log(), /An administrator already exists\. Bootstrap was skipped/);
+    assert.doesNotMatch(again.log(), /password synchronized/, 'an unchanged password is left alone');
     assert.match(again.log(), /Seed finished\. Inserted 0, already present 17/);
     const [[users]] = await root.query(`SELECT COUNT(*) AS n FROM \`${CMS_DB}\`.users`);
     assert.equal(Number(users.n), 1);
     again.stop();
+    // A changed BOOTSTRAP_ADMIN_PASSWORD is synchronised; with no bootstrap variables nothing is invented.
+    const rotated = await boot({PREPARE_DATABASE: '1', PREPARE_DATABASE_CONFIRM: CMS_DB, BOOTSTRAP_ADMIN_EMAIL: 'ada@foreignafrica.org', BOOTSTRAP_ADMIN_PASSWORD: `${ADMIN_PASSWORD}-rotated`});
+    assert.match(rotated.log(), /Administrator password synchronized for ada@foreignafrica\.org/);
+    noSecrets(rotated.log());
+    rotated.stop();
+    const bare = await boot({PREPARE_DATABASE: '1', PREPARE_DATABASE_CONFIRM: CMS_DB});
+    assert.doesNotMatch(bare.log(), /synchronized|created for/);
+    bare.stop();
+    const [[after]] = await root.query(`SELECT COUNT(*) AS n FROM \`${CMS_DB}\`.users`);
+    assert.equal(Number(after.n), 1, 'still one account, no default admin added');
     const check = await boot({PREPARE_DATABASE: 'check'});
     assert.match((await check.get('/')).text, /This is already a Foreign Africa CMS database/);
     assert.match((await check.get('/')).text, /A super administrator exists/);
