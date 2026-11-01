@@ -105,3 +105,26 @@ test('the staging site behind the temporary domain: gated, never indexed, deep l
   const plainHttp = await fetch(`${url}/api/cron/publish`, {method: 'POST', headers: {Host: 'fa-staging-123.hostingersite.com', Authorization: `Bearer ${good.CRON_SECRET}`}});
   assert.equal(plainHttp.status, 400, 'the cron endpoint refuses plain http');
 });
+
+import {buildFreshness, sourceHash} from '../server/build-stamp.js';
+import {cpSync, existsSync as exists, readFileSync as readFile, writeFileSync as writeFile} from 'node:fs';
+
+test('a committed dist/ that no longer matches the source is detected (the host build did not run)', () => {
+  const root = mkdtempSync(join(tmpdir(), 'fa-stale-'));
+  mkdirSync(join(root, 'src'), {recursive: true});
+  mkdirSync(join(root, 'dist'), {recursive: true});
+  writeFile(join(root, 'src', 'main.jsx'), 'export const a = 1;');
+  writeFile(join(root, 'index.html'), '<html></html>');
+  writeFile(join(root, 'vite.config.js'), 'export default {};');
+  writeFile(join(root, 'dist', 'index.html'), '<html></html>');
+  assert.equal(buildFreshness(root), 'unknown', 'no stamp yet');
+  writeFile(join(root, 'dist', 'build-stamp.json'), JSON.stringify({sourceHash: sourceHash(root)}));
+  assert.equal(buildFreshness(root), 'fresh');
+  writeFile(join(root, 'src', 'main.jsx'), 'export const a = 2;');
+  assert.equal(buildFreshness(root), 'stale', 'source changed after the build');
+  const checks = deploymentChecks(readConfig(good), {}, {distBuilt: true, distFreshness: 'stale'});
+  assert.deepEqual(blockingChecks(checks), [], 'a stale build warns but does not block');
+  assert.match(checks.find(check => check.id === 'build_fresh').detail, /npm run build/);
+  assert.equal(deploymentChecks(readConfig(good), {}, {distBuilt: true, distFreshness: 'fresh'}).some(check => check.id === 'build_fresh'), false);
+  void cpSync; void exists; void readFile;
+});

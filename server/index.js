@@ -8,6 +8,7 @@ import {createSite} from './site.js';
 import {prepareDatabase} from './prepare.js';
 import {blockingChecks, deploymentChecks} from './deployment-checks.js';
 import {inspectDatabase} from './db-inspect.js';
+import {buildFreshness} from './build-stamp.js';
 import {createBoot, describeStartupError, listenTarget} from './boot.js';
 
 // Bind the port first. A host that sees the app exit before it listens can only say "503"; a listening app can say why.
@@ -37,7 +38,7 @@ function fail(phase, problems, config) {
 async function start() {
   const config = readConfig();
   const dist = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist');
-  const checks = deploymentChecks(config, process.env, {distBuilt: existsSync(join(dist, 'index.html'))});
+  const checks = deploymentChecks(config, process.env, {distBuilt: existsSync(join(dist, 'index.html')), distFreshness: buildFreshness(join(dist, '..'))});
   for (const check of checks) if (check.status === 'fail' || check.status === 'warn') console.log(`[${check.status}] ${check.label}: ${check.detail}`);
   const hosted = config.appEnv === 'staging' || config.appEnv === 'production';
   const blocking = blockingChecks(checks);

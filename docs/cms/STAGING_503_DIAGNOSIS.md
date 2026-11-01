@@ -2,6 +2,15 @@
 
 Site: `https://maroon-gazelle-601956.hostingersite.com/` · deployed commit `55d057af` on `staging` · Hostinger status "Completed", website answers **503**.
 
+## Update: `staging` has moved (3019bc7)
+After this diagnosis was written, `justkoby` pushed **`3019bc7` "Include compiled dist assets and safeguard startup against unconfigured database"** to `staging`. It (a) moves `vite` from devDependencies to dependencies, (b) un-ignores and commits the compiled `dist/` (38 MB), and (c) replaces the `process.exit(1)` calls in `index.js` and `prepare.js` with log warnings.
+
+What that tells us: (a) and (b) are the classic response to a host that does not run, or cannot run, the build, which supports cause **5** below (the build step) as something that really happened. (c) addresses causes 1 and 2 by carrying on instead of exiting.
+
+How it was integrated: `staging` was **not** overwritten. It was merged into the development branch (commit `f918033`), so it is an ancestor again and a clean fast-forward of `staging` is possible. Where both sides changed `index.js` and `prepare.js`, the fail-soft design here was kept, because carrying on after a failed or half-finished initialisation can serve a half-built database, and a log warning is invisible when the host shows only a 503; here the process stays up and answers with the named reason. Their `vite` and `dist/` changes were kept.
+
+Trap closed: with `dist/` committed, an **old** committed build would be served silently if the host's build step does not run. Each build is now stamped with a fingerprint of its source (`dist/build-stamp.json`) and the server warns at start-up and in Settings when they differ.
+
 ## 1. What is confirmed and what is not
 
 **Confirmed (reproduced locally on the exact deployed commit):**

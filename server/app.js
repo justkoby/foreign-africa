@@ -8,8 +8,9 @@ import {readCookie, sameSecret, originAllowed, sqlTime} from './text.js';
 import {getMedia, listMedia, mediaRootProblem, storageMarker, mediaUsage, openMedia, readUpload, removeMedia, replaceUpload, saveUpload, updateMedia} from './media.js';
 import {createHandler as createDiscoverHandler} from '../api/discover.js';
 import {createHandler as createCmsHandler} from '../api/cms.js';
-import {createCms} from './cms-service.js';
+import {createCms, projectRoot} from './cms-service.js';
 import {deploymentChecks} from './deployment-checks.js';
+import {buildFreshness} from './build-stamp.js';
 import {createTerm, deleteTerm, listTerms, updateTerm} from './terms-store.js';
 import * as siteStore from './site-store.js';
 import {injectSiteData} from './site-inject.js';
@@ -326,7 +327,7 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
   app.get('/api/staff/settings', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('settings.read')(req);
-    send(res, 200, {appEnv: config.appEnv, publicSiteUrl: config.publicSiteUrl, mediaConfigured: Boolean(config.mediaRoot), cookieSecure: config.cookieSecure, cronConfigured: Boolean(config.cronSecret), dbConnectionLimit: config.dbConnectionLimit, checks: deploymentChecks(config, process.env, {distBuilt: Boolean(shell && shell())})});
+    send(res, 200, {appEnv: config.appEnv, publicSiteUrl: config.publicSiteUrl, mediaConfigured: Boolean(config.mediaRoot), cookieSecure: config.cookieSecure, cronConfigured: Boolean(config.cronSecret), dbConnectionLimit: config.dbConnectionLimit, checks: deploymentChecks(config, process.env, {distBuilt: Boolean(shell && shell()), distFreshness: buildFreshness(projectRoot)})});
   }));
 
   app.get('/api/staff/users', route(async (req, res) => {

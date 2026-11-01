@@ -2,7 +2,7 @@ import {mediaRootProblem} from './media.js';
 
 // A readiness report the app can produce about itself, because Hostinger Business has no shell to run checks in.
 // `fail` stops staging and production from starting; `warn` is shown but does not block; `info` is context.
-export function deploymentChecks(config, env = process.env, {distBuilt = true} = {}) {
+export function deploymentChecks(config, env = process.env, {distBuilt = true, distFreshness = 'fresh'} = {}) {
   const checks = [];
   const add = (id, status, label, detail) => checks.push({id, status, label, detail});
   const hosted = config.appEnv === 'staging' || config.appEnv === 'production';
@@ -10,6 +10,7 @@ export function deploymentChecks(config, env = process.env, {distBuilt = true} =
   try { site = new URL(config.publicSiteUrl); } catch { /* reported below */ }
 
   add('build', distBuilt ? 'ok' : hosted ? 'fail' : 'warn', 'Website build', distBuilt ? 'The website files (dist/index.html) exist.' : 'The website has not been built: dist/index.html is missing. In the hosting panel set the build command to "npm run build" (it needs vite, so dev dependencies must be installed) and redeploy.');
+  if (distBuilt && distFreshness === 'stale') add('build_fresh', 'warn', 'Website build is out of date', 'The compiled website in dist/ was built from different source than the code now deployed (the build step probably did not run on the host, and an older committed dist/ is being served). Run `npm run build` and commit dist/, or make sure the host runs it.');
   add('environment', hosted ? 'ok' : 'warn', 'Environment', hosted ? `APP_ENV is ${config.appEnv}.` : `APP_ENV is ${config.appEnv}. Set APP_ENV=staging on the temporary domain.`);
   if (!site) add('public_url', 'fail', 'Public address', 'PUBLIC_SITE_URL is not a valid address.');
   else if (hosted && site.protocol !== 'https:') add('public_url', 'fail', 'Public address', `PUBLIC_SITE_URL (${config.publicSiteUrl}) must start with https:// so secure cookies work.`);

@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
+    "build": "vite build && node scripts/stamp-build.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "start": "node server/index.js",
     "migrate": "node --env-file-if-exists=.env.local server/migrate.js",

@@ -4,7 +4,7 @@ Target: database `u777654758_cms_staging`, user `u777654758_cms_user`, MariaDB 1
 Nothing here has been run against Hostinger. Passwords never appear in this document; enter them only in hPanel.
 
 ## 0. Read this first: the deployed build is not safe to initialise with
-The build currently deployed (`55d057af`) has **none** of the safeguards below: no read-only check, no target confirmation, no WordPress guard. **Do not set `PREPARE_DATABASE=1` on that build.** Initialisation is only safe after the reviewed build is deployed, which needs your explicit go-ahead to fast-forward `staging` (never `main`). Until then, leave `PREPARE_DATABASE` empty.
+The build deployed at the time of the 503 report (`55d057af`; `staging` has since moved to `3019bc7`, which only avoids exiting on a database problem) has **none** of the safeguards below: no read-only check, no target confirmation, no WordPress guard. **Do not set `PREPARE_DATABASE=1` on that build.** Initialisation is only safe after the reviewed build is deployed, which needs your explicit go-ahead to fast-forward `staging` (never `main`). Until then, leave `PREPARE_DATABASE` empty.
 
 ## 1. What the safeguards guarantee
 | Guarantee | How |

@@ -28,7 +28,7 @@ Verified in this repository (automated tests, run on MariaDB 11.8.9 and MySQL 8.
 | B1 | Approval to deploy, and to update the `staging` branch | `staging` currently holds the older commit `55d057a`; the reviewed work is on `claude/fervent-heisenberg-b5k9dm`. I will not push to `staging` or `main` without approval | ► you |
 | B2 | A **new, empty** MariaDB database and user in hPanel | The CMS must never share the WordPress database. Whether hPanel lets you limit the user's privileges is **unverified** | ► you |
 | B3 | A persistent folder for uploads (`MEDIA_ROOT`) | Hostinger replaces deployment folders on each deploy. The folder must be **outside** it. Which absolute path works is **unverified** | ► you, then the marker test |
-| B4 | Hostinger runs `npm run build` with dev dependencies installed | The build needs `vite`. If the log says `vite: not found`, the install skipped dev dependencies | verify at first deploy |
+| B4 | Hostinger runs `npm run build` | `vite` is now a regular dependency, and `dist/` is committed as a fallback. A committed `dist/` is only a fallback: Settings warns if it is older than the source | verify at first deploy |
 | B5 | The `sharp` image library installs on Hostinger's Linux | Needed for thumbnails and resizing. If it fails, uploads still validate but are not resized | verify at first deploy |
 | B6 | HTTPS on the temporary domain | The app requires `https://` and Secure cookies. Hostinger normally provides it on the temporary domain; confirm the padlock | verify |
 | B7 | Cron Jobs availability on your plan | Optional. Without it scheduled items still go live when the site is visited | verify; or use an external scheduler |
