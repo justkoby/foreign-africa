@@ -13,7 +13,8 @@ export function createHandler({env=process.env,fetchImpl=fetch,clock=Date.now,li
   if(typeof body==='string'){if(body.length>4096)return res.status(413).json({error:'Question is too long.'});try{body=JSON.parse(body)}catch{return res.status(400).json({error:'Invalid request.'})}}
   const input=validateInput(body);if(!input)return res.status(400).json({error:'Enter a question of 1–500 characters and a valid category.'});
   const now=clock();for(const [key,value]of limits)if(now-value.start>=windowMs)limits.delete(key);
-  const address=String(req.headers?.['x-vercel-forwarded-for']??req.socket?.remoteAddress??'unknown').split(',')[0].trim();
+  // req.ip honours Express 'trust proxy' (Hostinger). The Vercel header is only trusted when Express is absent, because any client can set it elsewhere.
+  const address=String(req.ip??req.headers?.['x-vercel-forwarded-for']??req.socket?.remoteAddress??'unknown').split(',')[0].trim();
   const bucket=limits.get(address)??{start:now,count:0};
   if(bucket.count>=10||(!limits.has(address)&&limits.size>=5000)){res.setHeader('Retry-After','60');return res.status(429).json({error:'Please wait a minute before trying again.'})}
   bucket.count++;limits.set(address,bucket);

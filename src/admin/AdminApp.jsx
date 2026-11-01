@@ -1,5 +1,8 @@
 import React,{useEffect,useMemo,useState} from 'react';
 import {Eye,EyeOff} from 'lucide-react';
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import '@fontsource/inter/latin-600.css';
 import './admin.css';
 
 const sections=[

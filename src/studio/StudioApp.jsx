@@ -3,7 +3,9 @@ import {Eye, EyeOff, Menu} from 'lucide-react';
 import {allows} from '../../server/permissions.js';
 import {ContentEditor, ContentList} from './ArticleEditor.jsx';
 import MediaLibrary from './MediaLibrary.jsx';
-import '../fonts.css';
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import '@fontsource/inter/latin-600.css';
 import './studio.css';
 
 const sections = [['news', 'News'], ['commentary', 'Commentaries'], ['page', 'Pages'], ['programme', 'Programmes']];

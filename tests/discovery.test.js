@@ -65,3 +65,10 @@ test('endpoint enforces request limits and resets expired buckets',async()=>{
  const blocked=response();await handler(req,blocked);assert.equal(blocked.statusCode,429);
  now=60001;const later=response();await handler(req,later);assert.equal(later.statusCode,200);
 });
+test('rate limit keys on the proxy-resolved client address, not a client-supplied header',async()=>{
+ const handler=createHandler({env:{},limits:new Map(),clock:()=>0});
+ const send=(ip,spoof)=>{const r=response();return handler({method:'POST',ip,headers:{'x-vercel-forwarded-for':spoof},socket:{remoteAddress:'10.0.0.1'},body:{query:'internship'}},r).then(()=>r.statusCode)};
+ for(let i=0;i<10;i++)assert.equal(await send('203.0.113.7',`198.51.100.${i}`),200);
+ assert.equal(await send('203.0.113.7','198.51.100.250'),429,'rotating the spoofed header must not reset the limit');
+ assert.equal(await send('203.0.113.8','198.51.100.250'),200,'a different client behind the same proxy has its own bucket');
+});

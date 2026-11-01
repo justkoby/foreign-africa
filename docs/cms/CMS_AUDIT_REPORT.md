@@ -1,96 +1,66 @@
-# Foreign Africa CMS: Audit Report (Stage A)
+# Foreign Africa CMS: Audit Report
 
-Audited: 2026-11-01. Branch `claude/fervent-heisenberg-b5k9dm`, commit `f1b7841` (identical to `origin/main`). Working tree clean at start.
+Audited 2026-11-01. **Supersedes the first version of this file**, which was written from a clone that contained only `main` and wrongly concluded no CMS existed.
 
-## 1. Headline finding: there is no CMS in this repository
+## 1. What was inspected
 
-The brief describes an existing React/Express/MySQL/Tiptap CMS with `/admin` and `/editor` routes, worked on with Cursor and Antigravity. **None of that exists in this repo.**
-
-| Brief assumed | What is actually here |
+| Item | Result |
 |---|---|
-| Express API | No Express. One serverless-style handler, `api/discover.js` (Smart Discovery), plus a Vite dev middleware that mounts it |
-| MySQL | No MySQL. A *proposed, never-applied* Supabase/Postgres migration (`supabase/migrations/202610250001_content.sql`) |
-| Tiptap editor | Not a dependency. `package.json` has only `react`, `react-dom`, `lucide-react`, `vite` |
-| `/admin`, `/editor` | No such routes. `resolvePage()` in `src/pages/routes.js` knows only public pages |
-| Users/roles/auth/sessions | None. A `content_editors` table exists only in the unapplied SQL |
-| Media library, forms, submissions, revisions | None |
-| Antigravity / other branches | Only `main` and the current branch exist, both at `f1b7841`. Two commits total. No other branch, stash or uncommitted work |
-| Hostinger deployment | No Hostinger config. `vercel.json` and the README target Vercel |
+| Remote branches (`git ls-remote`, GitHub API) | `main` `f1b7841`, `staging` `55d057a`, `claude/fervent-heisenberg-b5k9dm`. **No Antigravity branch exists on the remote** |
+| `staging` history | `f1b7841` → `1426dfb` (your verified commit, "MySQL studio and Hostinger staging preparation") → `585eb2c` → `db67a07` → `55d057a` (three Hostinger startup/cert fixes). `1426dfb` is an ancestor of `staging` |
+| Stashes / uncommitted work in this workspace | None |
+| Antigravity work | Not identifiable as such. If it lives on your machine, in a fork, or in an unpushed branch, it is not visible to me. Please push it or tell me where it is |
+| Checkpoint | Local tag `checkpoint/staging-55d057a`. `staging` was merged into the working branch with a normal merge (`472e324`); nothing was rewritten or discarded |
 
-The repo's own docs agree: `README.md` says "The CMS, authentication, subscriptions … are not implemented yet" and `docs/cms-handoff.md` says "No database has been provisioned … no editor dashboard".
+## 2. Verified baseline
 
-**Most likely explanation:** the CMS work lives in a different repository, working directory or machine (the Cursor/Antigravity copy). This needs your answer before Stage B (see "Decisions needed").
+- `npm run build`: passes (Studio is a separate lazy chunk, 361 kB / 113 kB gzip; public bundle 438 kB / 128 kB).
+- `npm test`: **66 tests, 63 pass, 0 fail, 3 skipped.** The staging report says 72. The 3 skipped suites are the MySQL-backed ones (`phase2-mysql`, `prepare-database`, `staff-mysql`). They need `mysql-memory-server` to download MySQL from `cdn.mysql.com`, which this sandbox blocks. **I therefore could not independently confirm the migration/seed/permission claims; they are taken from the staging report and code reading.** Run `npm test` on a machine with internet to confirm, or give me a MySQL/MariaDB service.
+- Nothing has been deployed. Hostinger was not contacted.
 
-## 2. What the repo is
+## 3. Architecture as it actually is
 
-A polished public marketing site: React 19 + Vite 7, no router library (custom `resolvePage()` + query-string `?story=` routes), Lucide icons, Mark Pro fonts (self-hosted, `src/fonts.css`). 383 tracked files. Baseline health:
+One Node 22 Express process (`server/index.js`) serves the Vite SPA, `/api/staff`, `/api/public`, `/api/discover`, `/api/cms`, `/media`, robots and sitemap. MySQL via `mysql2`; four forward-only migrations (`001_identity` … `004_editorial`); bcrypt passwords; hashed session tokens; DB-backed login throttling; same-origin check on all staff writes; staging Basic-Auth lock; media via `busboy` + `sharp` into `MEDIA_ROOT` outside the deploy tree. Tiptap 2 editor. This matches your description and is retained.
 
-- `npm test`: 37/37 pass. `npm run build`: succeeds (JS 381 kB / 114 kB gzip, CSS 99 kB).
-- Tests cover content integrity (asset files exist, past events not shown as open), search, hero model and Discovery endpoint behaviour with mocked Gemini. No UI or browser tests.
+### Two separate editing surfaces (the central architectural problem)
 
-## 3. Content is hard-coded in source modules
+| | `/admin` "Studio" | `/editor` legacy editor |
+|---|---|---|
+| Storage | MySQL | **JSON files** in `data/cms/*.json` and `public/content/commentaries/` inside the deploy tree |
+| Auth | Per-user accounts, 4 roles, sessions | **One shared password** (`CMS_PASSWORD`), HMAC cookie |
+| Covers | news, commentaries, pages, programmes | commentaries, news, events, people, engage, **forms and submissions** |
+| Audit/revisions | Activity log, revisions, restore | None |
 
-This is the real CMS surface. Each static module below is a candidate content type, and a "contract" a CMS must reproduce.
+Consequences of `/editor` staying live: on Hostinger the deploy tree is replaced on each deploy, so file-edited events/people/forms and **private form submissions (`submissions.json`) can be lost**; submissions sit beside code with only a shared password; no per-user accountability. This is the highest-priority risk to resolve, and it is also where the Phase 5 modules (events, people, forms) currently live.
 
-| Content | Source | Records | Notes |
-|---|---|---|---|
-| Hero slides | `src/hero-content.js` | 5 | Already CMS-shaped: `published`, `order`, `desktopMedia`, optional `mobileMedia` (falls back to desktop), `cta`, `duration`, `featuredMedia`. Has `youtubeEmbedUrl()` host allowlist and `mediaForViewport()`. Best reuse candidate |
-| Activity/news stories | `src/activities.js`, served at `/?story=<id>` | 7 | Query-string routes, not real slugs. Content is block-ish but ad hoc |
-| Commentaries | `src/pages/commentaries-content.js` | 12 records | Listing only; bodies stay on WordPress |
-| Team & leadership | `src/pages/team-content.js`, `src/people.js` | 10 + 10 interns | Group routes + `/people/<id>/` |
-| Partners | `src/partners.js` | 6 | No links by design (no invented relationships) |
-| Policy briefs | `src/pages/policy-content.js` + `public/documents/policy-briefs/<slug>/` | 2 | PDF + cover + per-page WebP + `text.json`, generated offline by `scripts/render-policy-briefs.py` (PyMuPDF) |
-| Opportunities | `src/pages/opportunities-content.js` | 4 pathways | Status text is deliberately non-committal |
-| About | `src/pages/about-content.js` | 1 | |
-| Menus | `src/menu-content.js`, `src/content.js` | | Hard-coded mega menu |
-| Homepage sections | Inline JSX in `src/main.jsx` (~13 kB, long lines) | ~10 sections | Copy is embedded in JSX, not data. Biggest refactor cost |
-| Smart Discovery catalogue | `src/discovery.js` + `src/pages/page-directory.js` | | Built from the modules above at import time; new CMS content will not appear unless this is made data-driven |
+## 4. What the Studio does today (code-verified)
 
-Export script `scripts/export-content.mjs` already produces `supabase/content-seed.json` (draft import data). Reuse it as the basis of the first import, not as a finished data model: it covers only `about`, `person`, `news`, `hero` and omits partners, policy briefs, opportunities, commentaries, menus and homepage sections.
+Working: sign-in/out, session, password change; user list/create/role/disable with a guard keeping ≥1 super admin; dashboard counts; content list with search, status filter, sort and pagination; Tiptap editor (H2–H4, bold/italic/underline, lists, quote, links, images with alt/caption/link); server-side document validation and HTML rendering with link/mark/node allow-lists and depth limit; SEO title/description; author name, location, tags, category, featured, image fit; featured and social image via media picker; duplicate; soft delete; state workflow (draft, in_review, changes_requested, approved, scheduled, published, rejected, archived) gated by permission; revisions list, compare, restore; 4-second draft autosave; `beforeunload` unsaved-changes warning; scheduled promotion (`server/promote-scheduled.js` and `POST /api/staff/schedule/run`); media library with magic-byte sniffing, size limits, sharp resize/thumbnail, alt text, PDF support, delete blocked while referenced by content; activity log; health; read-only settings; server-rendered SEO meta, canonical, JSON-LD, robots and sitemap (noindex outside production).
 
-## 4. Existing assets worth reusing
+Placeholders: the sidebar lists Events, Publications, Team, Partners, Opportunities, Forms, Submissions, Homepage, Navigation and Redirects, each labelled "Not in this release" (honest, not dead buttons). Tables for these exist in `003_listings.sql` ("No application code writes these").
 
-1. **Hero data model + tests** (`hero-content.js`, `tests/hero.test.js`): validated shape, fallback rule, past-event guard.
-2. **Smart Discovery server pattern** (`server/discovery-service.js`, `api/discover.js`): good Gemini hygiene to copy for the editorial assistant. Key via env var only, `x-goog-api-key` header, 10 s timeout, structured JSON schema, token cap, source-ID validation, markup/URL rejection in output, no logging of questions. It is public-facing and directory-only, so it is **not** the editorial assistant. It does not do auth, roles, usage accounting or grounding on full documents.
-3. **Document reader** (`DocumentReader.jsx`, lazy-loaded): working; must be preserved.
-4. **Provenance discipline**: `docs/content-sources.md` records evidence limits (e.g. 474 registrations ≠ attendance). The CMS needs a provenance/source field and an editorial rule set to keep this.
-5. **Supabase RLS draft**: sound ideas (drafts never public, `published_at <= now()` gating, editor membership assigned server-side, slug regex), but see risks.
+## 5. Gaps against the brief (summary; detail in the gap analysis)
 
-## 5. Technical debt and risks
+1. **No AI in the CMS.** Gemini exists only in the public Discovery endpoint.
+2. **Hero and homepage are not CMS-driven.** `hero-content.js` and inline JSX in `main.jsx`; `homepage_slots` table unused.
+3. **Events, opportunities, team, partners, policy briefs, forms, submissions, menus, redirects, settings** have no MySQL-backed code. Events/people/forms exist only in the legacy file editor.
+4. **Roles:** 4 roles (`contributor` ≈ Author); no Reviewer; no assignment of submissions; permissions are coarse (no per-content-type or per-section grants, so "Editor may edit homepage sections but not settings" cannot yet be expressed).
+5. **Editor:** no tables, no video embeds, no per-block AI, no in-app navigation guard for unsaved changes (only tab close), no bulk actions, no categories/tags management screen, media has no replace-image, grid/list toggle, drag-drop upload, usage list, or upload to private storage for applicant documents.
+6. **Public sync:** commentaries/news read from `/api/public/content`; hero, team, partners, policy briefs, opportunities, events and Smart Discovery's catalogue are still static modules.
+7. **Hosting unknowns:** `MEDIA_ROOT` outside the deploy tree unconfirmed; scheduled-publish needs a cron or an external caller to hit the schedule endpoint (not verified on Hostinger Business); no backup restore drill run; nothing deployed.
 
-**Repository hygiene**
-- `UPDATES/` is **36 MB** of superseded patch bundles and file copies (`integration.patch`, `files/`, a full `first-pass` copy). Largest source of confusion about "latest". Delete or move out after confirming `main` already contains them (a `diff` shows `files/src` is a subset/older of `src`).
-- Four `WhatsApp-Image-*.webp` files at the repo root duplicate `public/images/activities/*` (same byte sizes).
-- 27 `.ttf` files tracked; some weights ship only as TTF (100–350 kB each) and are bundled into `dist`. Convert missing weights to WOFF2 and subset. Confirm the Mark Pro licence covers web embedding.
-- `main.jsx` and several content files are minified-style long lines, which hurts diffs, review and CMS refactoring.
-- Duplicate sources of truth: `src/people.js` vs `team-content.js`; route knowledge split between `routes.js`, `page-directory.js` and `menu-content.js`.
+## 6. Risks and fixes made
 
-**Security / reliability (existing code)**
-- `api/discover.js` rate-limit key is `x-vercel-forwarded-for` falling back to `socket.remoteAddress`. Off Vercel (e.g. Hostinger behind a proxy) the header is absent and the fallback is the proxy's IP, so **all visitors would share one 10/min bucket**. If a trusted-proxy header is added naively it becomes spoofable. Needs a configured trusted-proxy rule.
-- Limiter is per-instance memory, so it is not a cost cap. The README already says this.
-- Origin check only runs when an `Origin` header is present (curl bypasses it). Acceptable for a public endpoint, wrong for admin endpoints.
-- `vite.config.js` hard-codes `allowedHosts: ['terminal.local']`.
+| Finding | Status |
+|---|---|
+| Discovery rate limiter keyed on `x-vercel-forwarded-for` (client-spoofable off Vercel) falling back to the socket address (the proxy's IP on Hostinger, so one shared bucket) | **Fixed**: prefers Express `req.ip` (trust proxy is already set); regression test added |
+| Admin typography used DM Sans/Mark Pro | **Fixed** for `/admin` and `/editor` only: Inter, self-hosted via `@fontsource/inter` (OFL), latin 400/500/600. Public site CSS unchanged and verified in browser (Mark Pro still renders on `/`) |
+| `UPDATES/` 36 MB bundle | Already removed on `staging`; nothing to do |
+| Four `WhatsApp-Image-*.webp` files at repo root | Still present. Not referenced? **Verify before deleting** (not done) |
+| `npm audit` reports vulnerabilities in the dependency tree | Not triaged yet |
+| Legacy `/editor` shared password + file storage in production | Open, P0 (see roadmap) |
+| `/api/cms` write endpoints rate limits are per-process memory | Low; acceptable behind per-user auth |
+| `docs/cms-handoff.md` and `supabase/` are historical (Supabase proposal) | Mark as superseded; not deleted |
 
-**Draft Supabase schema gaps**
-- Single `content_items` table with free-form `jsonb` payload: no per-kind validation, no revisions, no media/forms/submissions tables.
-- Role model is a boolean (`content_editors`): any editor can update/delete anything, publish, and edit everything. No author/reviewer/admin split, so it cannot meet Phase 7.
-- Kinds limited to 5; no partner, policy brief, event, opportunity, form, menu, redirect or settings kinds.
-- Only `news` carries "original source/provenance" by convention, not by constraint.
-
-**Platform mismatch**
-- The stated target (Hostinger Business) and the committed config (Vercel + proposed Supabase/Postgres) conflict. `docs/cms-handoff.md` explicitly recommends Next.js + Supabase, which contradicts the brief's "preserve React/Express/MySQL". Hostinger Business can host Node.js apps and MySQL, but this must be confirmed on the actual plan (Node version, memory, cron, outbound HTTPS to Google, persistent disk for uploads).
-
-## 6. Documentation accuracy
-
-README and `docs/*.md` are **accurate and unusually honest** about the CMS not existing. They are inaccurate only relative to the brief. README's deployment section describes Vercel, not Hostinger, and has no backup/recovery section.
-
-## 7. Prioritized critical findings
-
-1. **P0: the CMS code isn't here.** Locate the Cursor/Antigravity work, or confirm we are building from zero.
-2. **P0: platform decision** (Express+MySQL on Hostinger vs Supabase+Vercel) blocks all backend work.
-3. **P1: homepage copy is embedded in JSX**, so a homepage editor needs a section-by-section extraction into data with unchanged rendering.
-4. **P1: no real slugs** for stories (`?story=`), which blocks SEO preservation and "slugs/links preserved".
-5. **P1: Smart Discovery is build-time**, so it won't index CMS content until fed from the content API.
-6. **P1: policy-brief processing** depends on Python/PyMuPDF, which is unlikely on shared hosting. Needs a Node alternative or a developer-run step.
-7. **P2: `UPDATES/` bloat, root duplicates, TTF-only fonts.**
-8. **P2: rate-limit keying** behind a non-Vercel proxy.
+## 7. Documentation accuracy
+`STAGING_READINESS_REPORT.md` is detailed and mostly consistent with the code, except the test count (72 stated vs 66 here, 3 skipped for sandbox network reasons). `CMS_AUDIT.md` (25 Oct) still describes "no MySQL, no Express" and is historical. `cms-handoff.md` is historical Supabase planning.

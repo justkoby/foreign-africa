@@ -1,5 +1,7 @@
 # Foreign Africa CMS: Admin Design System (draft)
 
+> Status: Inter is now applied to `/admin` and `/editor` (self-hosted via `@fontsource/inter`, latin 400/500/600). The rest of this document is the target for roadmap step 2. Navigation below must be reconciled with the existing Studio module list and the unbuilt-module placeholders.
+
 Scope: the **admin UI only**. The public site's Mark Pro typography and CSS are untouched. The admin ships as a separate entry with its own stylesheet so neither can leak into the other.
 
 ## Principles
