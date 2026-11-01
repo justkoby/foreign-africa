@@ -14,8 +14,7 @@ async function start() {
   try {
     await prepareDatabase(config);
   } catch (error) {
-    console.error(error.status ? error.message : 'Database preparation failed.');
-    process.exit(1);
+    console.warn('Database preparation warning:', error.status ? error.message : error.message || 'Database not ready yet.');
   }
   const pool = databaseConfigured(config) ? createPool(config) : null;
   const dist = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist');

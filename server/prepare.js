@@ -7,8 +7,8 @@ import {seedCatalogue} from './seed-content.js';
 export async function prepareDatabase(config, env = process.env) {
   if (env.PREPARE_DATABASE !== '1') return {ran: false};
   if (!databaseConfigured(config) || !config.sessionSecret) {
-    console.error('PREPARE_DATABASE=1 requires DB_HOST, DB_USER, DB_NAME, and SESSION_SECRET.');
-    process.exit(1);
+    console.warn('PREPARE_DATABASE=1 skipped: DB_HOST, DB_USER, DB_NAME, or SESSION_SECRET not set yet.');
+    return {ran: false};
   }
   const pool = createPool(config);
   try {
