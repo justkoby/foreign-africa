@@ -49,7 +49,7 @@ export function originAllowed(origin, config, host) {
     const url = new URL(origin);
     const site = new URL(config.publicSiteUrl);
     if (url.origin === site.origin) return true;
-    if ((config.appEnv === 'development' || config.appEnv === 'test') && host && url.host === host) return true;
+    if (host && url.host === host) return true;
   } catch {
     return false;
   }
