@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useEditor, EditorContent} from '@tiptap/react';
-import {ArrowLeft, CalendarClock, Eye, History, PanelRightClose, PanelRightOpen, Search, SlidersHorizontal, X} from 'lucide-react';
+import {ArrowLeft, CalendarClock, ExternalLink, Eye, History, PanelRightClose, PanelRightOpen, Search, SlidersHorizontal, Sparkles, X} from 'lucide-react';
 import {allows} from '../../../server/permissions.js';
 import {api} from '../api.js';
 import {MediaPicker} from '../MediaLibrary.jsx';
@@ -8,6 +8,7 @@ import {setUnsaved} from '../unsaved.js';
 import {Button, StatusChip, Switch, Tabs, Notice, Skeleton, useFeedback} from '../ui/index.jsx';
 import {documentFacts, editorExtensions, insertBlock} from './extensions.js';
 import Toolbar from './Toolbar.jsx';
+import GeminiAssistant from './GeminiAssistant.jsx';
 import './editor.css';
 
 const statusLabel = {draft: 'Draft', scheduled: 'Scheduled', published: 'Published', archived: 'Archived', in_review: 'In review', changes_requested: 'Changes requested', approved: 'Approved', rejected: 'Rejected'};
@@ -49,6 +50,7 @@ function Editing({type, initial, user}) {
   const [slugOpen, setSlugOpen] = useState(false);
   const [tab, setTab] = useState('document');
   const [panelOpen, setPanelOpen] = useState(panelPref);
+  const [geminiExpanded, setGeminiExpanded] = useState(false);
   const {confirm} = useFeedback();
   const togglePanel = () => setPanelOpen(open => {try {window.localStorage.setItem('fa-editor-panel', open ? 'closed' : 'open');} catch {/* preference only */} return !open;});
   const itemRef = useRef(item);
@@ -140,13 +142,15 @@ function Editing({type, initial, user}) {
       <StatusChip status={item.status}/>
       <div className="ed-top-actions">
         {item.id && <Button size="sm" icon={Eye} onClick={preview}>Preview</Button>}
+        {item.status === 'published' && <Button size="sm" variant="ghost" icon={ExternalLink} href={slugPath} target="_blank" rel="noreferrer">View live</Button>}
+        <Button size="sm" variant={tab === 'gemini' && panelOpen ? 'primary' : 'ghost'} icon={Sparkles} onClick={() => { if (tab === 'gemini' && panelOpen) { setPanelOpen(false); } else { setTab('gemini'); setPanelOpen(true); } }}>Gemini</Button>
         <Button size="sm" variant="soft" onClick={() => save()} disabled={!dirty && Boolean(item.id)}>{!item.id || item.status === 'draft' ? 'Save draft' : 'Update'}</Button>
         {publisher && item.status !== 'published' && item.status !== 'scheduled' && <Button size="sm" variant="primary" disabled={problems.length > 0} title={problems[0] || ''} onClick={() => save('published')}>Publish</Button>}
         <button type="button" className="fa-iconbtn" aria-label={panelOpen ? 'Hide settings panel' : 'Show settings panel'} aria-expanded={panelOpen} onClick={togglePanel}>{panelOpen ? <PanelRightClose size={18}/> : <PanelRightOpen size={18}/>}</button>
       </div>
     </header>
     {error && <div className="ed-alert"><Notice tone="danger">{error}</Notice></div>}
-    <div className={`ed-layout${panelOpen ? '' : ' is-wide'}`}>
+    <div className={`ed-layout${panelOpen ? '' : ' is-wide'}${tab === 'gemini' && geminiExpanded ? ' is-gemini-expanded' : ''}`}>
       <div className="ed-main">
         <label className="fa-sr" htmlFor="ed-title">Title</label>
         <textarea id="ed-title" className="ed-title" rows={1} value={item.title} placeholder="Add title" onChange={event => {touch({title: event.target.value}); event.target.style.height = 'auto'; event.target.style.height = `${event.target.scrollHeight}px`;}}/>
@@ -155,8 +159,8 @@ function Editing({type, initial, user}) {
         <div className="ed-canvas"><EditorContent editor={editor}/></div>
         <p className="ed-foot">{facts.words.toLocaleString('en-GB')} words · about {Math.max(1, Math.ceil(facts.words / 220))} min read{facts.tables ? ` · ${facts.tables} table${facts.tables === 1 ? '' : 's'}` : ''}{facts.videos ? ` · ${facts.videos} video${facts.videos === 1 ? '' : 's'}` : ''}</p>
       </div>
-      <aside className="ed-side" aria-label="Document settings" hidden={!panelOpen}>
-        <Tabs label="Settings" value={tab} onChange={setTab} tabs={[{id: 'document', label: 'Document', icon: SlidersHorizontal}, {id: 'seo', label: 'SEO', icon: Search}, ...(item.id ? [{id: 'history', label: 'History', icon: History, count: revisions.length || undefined}] : [])]}/>
+      <aside className={`ed-side${tab === 'gemini' && geminiExpanded ? ' is-expanded' : ''}`} aria-label="Document settings" hidden={!panelOpen}>
+        <Tabs label="Settings" value={tab} onChange={setTab} tabs={[{id: 'document', label: 'Document', icon: SlidersHorizontal}, {id: 'seo', label: 'SEO', icon: Search}, ...(item.id ? [{id: 'history', label: 'History', icon: History, count: revisions.length || undefined}] : []), {id: 'gemini', label: 'Gemini', icon: Sparkles}]}/>
         {tab === 'document' && <>
         <Panel title="Publish">
           <dl className="ed-facts"><dt>Status</dt><dd><StatusChip status={item.status}/></dd>{when && <><dt>Goes live</dt><dd>{time(when)}</dd></>}{item.status === 'published' && <><dt>Published</dt><dd>{time(item.publishedAt)}</dd></>}</dl>
@@ -198,6 +202,17 @@ function Editing({type, initial, user}) {
           {revisions.length ? <ul className="ed-revisions">{revisions.map(revision => <li key={revision.id}><button type="button" className="ed-linkish" onClick={() => setCompare(compare?.id === revision.id ? null : revision)}>{time(revision.createdAt)}</button> <small>{revision.editorName}</small></li>)}</ul> : <p className="studio-hint">No revisions yet.</p>}
           {compare && <div className="ed-compare"><h3>{compare.title}</h3><p>{compare.text || 'No text.'}</p>{manager && <button type="button" onClick={async () => {if (dirty && !await confirm({title: 'Restore this version?', message: 'Restoring replaces your unsaved edits.', confirm: 'Restore'})) return; try {const restored = await api(`/api/staff/content/${item.id}/restore`, {method: 'POST', body: {revisionId: compare.id}}); editor.commands.setContent(restored.item.document); setItem({...restored.item, publishedOn: dateInput(restored.item.publishedAt)}); setEdits(0); setCompare(null); setState('Revision restored as a draft.'); loadRevisions(item.id);} catch (reason) {setError(reason.message);}}}>Restore this version</button>}</div>}
         </Panel>}
+        {tab === 'gemini' && (
+          <GeminiAssistant
+            editor={editor}
+            item={{...item, type}}
+            touch={touch}
+            addTag={addTag}
+            onClose={() => setTab('document')}
+            isExpanded={geminiExpanded}
+            onToggleExpand={() => setGeminiExpanded(v => !v)}
+          />
+        )}
       </aside>
     </div>
     {picker && <MediaPicker accept={picker === 'pdf' ? 'pdf' : 'image'} user={user} onClose={() => setPicker('')} onSelect={file => {

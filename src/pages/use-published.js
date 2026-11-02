@@ -27,6 +27,12 @@ export function usePublished(type) {
 }
 
 export function useArticle(type, slug) {
+  if (typeof window !== 'undefined' && window.__FA_PREVIEW_DATA__?.item) {
+    const previewItem = window.__FA_PREVIEW_DATA__.item;
+    if (window.location.pathname.includes('/preview') || previewItem.slug === slug || String(previewItem.id) === String(slug)) {
+      return {status: 'ready', data: {item: previewItem}, item: previewItem, error: '', retry: () => {}};
+    }
+  }
   const result = useGet(slug ? `/api/public/content/${type}/${encodeURIComponent(slug)}` : '');
   return {...result, item: result.data?.item ?? null};
 }

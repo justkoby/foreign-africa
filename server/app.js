@@ -3,7 +3,7 @@ import {existsSync, readFileSync} from 'node:fs';
 import {access, constants} from 'node:fs/promises';
 import {join, resolve} from 'node:path';
 import {allows} from './permissions.js';
-import {externalRedirect, renderContentPage, robotsText, sitemapXml} from './html.js';
+import {externalRedirect, renderContentPage, injectPreviewArticle, robotsText, sitemapXml} from './html.js';
 import {readCookie, sameSecret, originAllowed, sqlTime} from './text.js';
 import {getMedia, listMedia, mediaRootProblem, storageMarker, mediaUsage, openMedia, readUpload, removeMedia, replaceUpload, saveUpload, updateMedia} from './media.js';
 import {createHandler as createDiscoverHandler} from '../api/discover.js';
@@ -17,6 +17,7 @@ import * as siteStore from './site-store.js';
 import {injectSiteData} from './site-inject.js';
 import {addNote, exportCsv, getSubmission, listSubmissions, recordSubmission, updateSubmission} from './submissions.js';
 import * as store from './store.js';
+import {assistEditorial} from './gemini-service.js';
 
 const cookieName = 'fa_staff';
 
@@ -472,8 +473,12 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
     const user = await requireUser('content.read')(req);
     const item = await store.getContent(pool, Number(req.params.id));
     if (!store.editorCanSee(user, item)) throw store.fail(403, 'You cannot preview that page.');
-    res.setHeader('X-Robots-Tag', 'noindex');
-    res.type('html').send(renderContentPage({...config, appEnv: 'development'}, item));
+
+    const html = shell ? shell() : '';
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    if (!html) return res.type('html').send(renderContentPage({...config, appEnv: 'development'}, item));
+    res.type('html').send(injectPreviewArticle(html, config, item));
   }));
 
   app.post('/api/staff/content/:id/duplicate', route(async (req, res) => {
@@ -486,6 +491,28 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('content.read')(req);
     send(res, 200, {item: await store.restoreRevision({pool, clock, actor: user, contentId: Number(req.params.id), revisionId: Number(req.body?.revisionId)})});
+  }));
+
+  app.post('/api/staff/gemini/assist', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('content.create')(req);
+    const result = await assistEditorial({
+      action: req.body?.action,
+      prompt: req.body?.prompt,
+      selectedText: req.body?.selectedText,
+      context: req.body?.context,
+    });
+    if (!result.ok) {
+      return send(res, result.code === 'API_KEY_MISSING' ? 503 : 500, {error: result.error, code: result.code});
+    }
+    await store.recordActivity(pool, clock, {
+      actorId: user.id,
+      action: 'gemini.assist',
+      subjectType: 'content',
+      subjectId: req.body?.context?.id ? String(req.body.context.id) : null,
+      metadata: {action: req.body?.action || 'custom'},
+    });
+    send(res, 200, result);
   }));
 
   app.get('/api/staff/submissions', route(async (req, res) => {

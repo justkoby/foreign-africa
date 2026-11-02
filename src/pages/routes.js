@@ -11,6 +11,12 @@ export const teamGroups=[
 ];
 export function resolvePage(pathname){
  const path='/'+pathname.split('/').filter(Boolean).join('/')+'/';
+ if(typeof window!=='undefined'&&window.__FA_PREVIEW_DATA__?.item){
+  const item=window.__FA_PREVIEW_DATA__.item;
+  if(path.startsWith('/api/staff/content/')&&path.includes('/preview/')){
+   return {type:item.type==='commentary'?'commentary':'news-article',slug:item.slug,id:item.id,preview:true};
+  }
+ }
  if(['/about-us/','/who-we-are/','/our-mission-vision/'].includes(path))return {type:'about'};
  if(['/blog/','/commentaries/','/category/blog/'].includes(path))return {type:'commentaries'};
  const article=commentaries.find(item=>path===`/${item.slug}/`||path===`/blog/${item.slug}/`);if(article)return {type:'commentary',id:article.id,slug:article.slug};

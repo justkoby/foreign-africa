@@ -26,7 +26,7 @@ export function presentUser(row, roleKeys) {
   return {id: Number(row.id), email: row.email, name: row.name, status: row.status, roles: roleKeys, role: primaryRole(roleKeys)};
 }
 
-async function recordActivity(pool, clock, entry) {
+export async function recordActivity(pool, clock, entry) {
   await pool.execute(
     'INSERT INTO activity_logs (actor_id, action, subject_type, subject_id, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)',
     [entry.actorId ?? null, entry.action, entry.subjectType, String(entry.subjectId ?? ''), JSON.stringify(entry.metadata ?? {}), sqlTime(clock())],
