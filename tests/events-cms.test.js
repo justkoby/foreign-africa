@@ -609,8 +609,13 @@ function createInMemoryEventsPool(sessionSecret) {
     }
 
     // Forms
+    if (s.includes('forms') && /\b(deleted_at|description|recipient_email|author_id)\b/i.test(s)) {
+      const err = new Error(`ER_BAD_FIELD_ERROR in forms query: ${s}`);
+      err.code = 'ER_BAD_FIELD_ERROR';
+      throw err;
+    }
     if (s.startsWith('SELECT * FROM forms')) {
-      let rows = state.forms.filter(f => !f.deleted_at);
+      let rows = [...state.forms];
       if (s.includes('form_key = ?')) {
         rows = rows.filter(f => f.form_key === params[0]);
       }
@@ -626,16 +631,12 @@ function createInMemoryEventsPool(sessionSecret) {
         form_key: params[0],
         purpose: params[1],
         title: params[2],
-        description: params[3],
-        recipient_email: params[4],
-        success_message: params[5],
-        consent_label: params[6],
-        fields_json: params[7],
-        status: params[8],
-        author_id: params[9],
-        created_at: params[10],
-        updated_at: params[11],
-        deleted_at: null,
+        success_message: params[3],
+        consent_label: params[4],
+        fields_json: params[5],
+        status: params[6],
+        created_at: params[7],
+        updated_at: params[8],
       });
       return [{ insertId: id }];
     }
@@ -646,13 +647,11 @@ function createInMemoryEventsPool(sessionSecret) {
         Object.assign(f, {
           purpose: params[0],
           title: params[1],
-          description: params[2],
-          recipient_email: params[3],
-          success_message: params[4],
-          consent_label: params[5],
-          fields_json: params[6],
-          status: params[7],
-          updated_at: params[7 + 1],
+          success_message: params[2],
+          consent_label: params[3],
+          fields_json: params[4],
+          status: params[5],
+          updated_at: params[6],
         });
       }
       return [{}];

@@ -1042,7 +1042,17 @@ function normalizeFormFields(fields) {
 }
 
 function rowToForm(row) {
-  const fields = normalizeFormFields(parseJson(row.fields_json, []));
+  const rawPayload = parseJson(row.fields_json, []);
+  const fieldsList = Array.isArray(rawPayload)
+    ? rawPayload
+    : (Array.isArray(rawPayload?.fields) ? rawPayload.fields : []);
+  const description = (!Array.isArray(rawPayload) && typeof rawPayload?.description === 'string')
+    ? rawPayload.description
+    : (row.description || '');
+  const recipientEmail = (!Array.isArray(rawPayload) && typeof rawPayload?.recipientEmail === 'string')
+    ? rawPayload.recipientEmail
+    : (row.recipient_email || '');
+  const fields = normalizeFormFields(fieldsList);
   const successMsg = row.success_message || 'Thank you. Your submission has been received.';
   return {
     id: row.form_key,
@@ -1050,9 +1060,9 @@ function rowToForm(row) {
     formKey: row.form_key,
     purpose: row.purpose || row.form_key,
     title: row.title,
-    intro: row.description || '',
-    description: row.description || '',
-    recipientEmail: row.recipient_email || '',
+    intro: description,
+    description,
+    recipientEmail,
     success: successMsg,
     successMessage: successMsg,
     consentLabel: row.consent_label || 'I agree that Foreign Africa may process these details to respond to my submission.',
@@ -1064,15 +1074,14 @@ function rowToForm(row) {
 
 export async function listFormsDb(pool, {onlyPublished = false} = {}) {
   if (!pool) return [];
-  const where = ['deleted_at IS NULL'];
-  if (onlyPublished) where.push("status = 'published'");
-  const [rows] = await pool.query(`SELECT * FROM forms WHERE ${where.join(' AND ')} ORDER BY title ASC`);
+  const where = onlyPublished ? "WHERE status = 'published'" : '';
+  const [rows] = await pool.query(`SELECT * FROM forms ${where} ORDER BY title ASC`);
   return rows.map(rowToForm);
 }
 
 export async function getFormDb(pool, formKey, {onlyPublished = false} = {}) {
   if (!pool || !formKey) return null;
-  const where = ['form_key = ?', 'deleted_at IS NULL'];
+  const where = ['form_key = ?'];
   if (onlyPublished) where.push("status = 'published'");
   const [rows] = await pool.query(`SELECT * FROM forms WHERE ${where.join(' AND ')} LIMIT 1`, [cleanStr(formKey, 80)]);
   return rows.length ? rowToForm(rows[0]) : null;
@@ -1087,23 +1096,24 @@ export async function saveFormDb({pool, clock = () => Date.now(), actor, input})
   const recipientEmail = cleanStr(input.recipientEmail ?? '', 190);
   const successMessage = cleanStr(input.successMessage || 'Thank you. Your submission has been received.', 400);
   const consentLabel = cleanStr(input.consentLabel || 'I agree that Foreign Africa may process these details to respond to my submission.', 360);
-  const status = writableStatuses.has(input.status) ? input.status : 'published';
+  const status = ['draft', 'published', 'archived'].includes(input.status) ? input.status : 'published';
   const fields = normalizeFormFields(input.fields);
   if (!fields.length) throw fail(400, 'Add at least one field to the form.');
 
+  const payloadJson = JSON.stringify({description, recipientEmail, fields});
   const now = sqlTime(clock());
   const existing = await getFormDb(pool, rawKey);
   if (existing) {
     await pool.execute(
-      `UPDATE forms SET purpose = ?, title = ?, description = ?, recipient_email = ?, success_message = ?, consent_label = ?, fields_json = ?, status = ?, updated_at = ?
+      `UPDATE forms SET purpose = ?, title = ?, success_message = ?, consent_label = ?, fields_json = ?, status = ?, updated_at = ?
        WHERE form_key = ?`,
-      [purpose, title, description, recipientEmail, successMessage, consentLabel, JSON.stringify(fields), status, now, rawKey]
+      [purpose, title, successMessage, consentLabel, payloadJson, status, now, rawKey]
     );
   } else {
     await pool.execute(
-      `INSERT INTO forms (form_key, purpose, title, description, recipient_email, success_message, consent_label, fields_json, status, author_id, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [rawKey, purpose, title, description, recipientEmail, successMessage, consentLabel, JSON.stringify(fields), status, actor?.id ?? null, now, now]
+      `INSERT INTO forms (form_key, purpose, title, success_message, consent_label, fields_json, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [rawKey, purpose, title, successMessage, consentLabel, payloadJson, status, now, now]
     );
   }
 
