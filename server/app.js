@@ -1,23 +1,24 @@
 import express from 'express';
-import {existsSync, readFileSync} from 'node:fs';
-import {access, constants} from 'node:fs/promises';
-import {join, resolve} from 'node:path';
-import {allows} from './permissions.js';
-import {externalRedirect, renderContentPage, injectPreviewArticle, robotsText, sitemapXml} from './html.js';
-import {readCookie, sameSecret, originAllowed, sqlTime} from './text.js';
-import {getMedia, listMedia, mediaRootProblem, storageMarker, mediaUsage, openMedia, readUpload, removeMedia, replaceUpload, saveUpload, updateMedia} from './media.js';
-import {createHandler as createDiscoverHandler} from '../api/discover.js';
-import {createHandler as createCmsHandler} from '../api/cms.js';
-import {createCms, projectRoot} from './cms-service.js';
-import {deploymentChecks} from './deployment-checks.js';
-import {buildFreshness} from './build-stamp.js';
-import {buildOverview} from './overview.js';
-import {createTerm, deleteTerm, listTerms, updateTerm} from './terms-store.js';
+import { existsSync, readFileSync } from 'node:fs';
+import { access, constants } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
+import { allows } from './permissions.js';
+import { externalRedirect, renderContentPage, injectPreviewArticle, robotsText, sitemapXml } from './html.js';
+import { readCookie, sameSecret, originAllowed, sqlTime } from './text.js';
+import { getMedia, listMedia, mediaRootProblem, storageMarker, mediaUsage, openMedia, readUpload, removeMedia, replaceUpload, saveUpload, updateMedia } from './media.js';
+import { createHandler as createDiscoverHandler } from '../api/discover.js';
+import { createHandler as createCmsHandler } from '../api/cms.js';
+import { createCms, projectRoot } from './cms-service.js';
+import { deploymentChecks } from './deployment-checks.js';
+import { buildFreshness } from './build-stamp.js';
+import { buildOverview } from './overview.js';
+import { createTerm, deleteTerm, listTerms, updateTerm } from './terms-store.js';
 import * as siteStore from './site-store.js';
-import {injectSiteData} from './site-inject.js';
-import {addNote, exportCsv, getSubmission, listSubmissions, recordSubmission, updateSubmission} from './submissions.js';
+import { injectSiteData } from './site-inject.js';
+import { addNote, exportCsv, getSubmission, listSubmissions, recordSubmission, updateSubmission } from './submissions.js';
 import * as store from './store.js';
-import {assistEditorial} from './gemini-service.js';
+import * as eventsStore from './events-store.js';
+import { assistEditorial } from './gemini-service.js';
 
 const cookieName = 'fa_staff';
 
@@ -33,18 +34,18 @@ function cookie(token, config, maxAge) {
 
 async function storageCheck(config) {
   const blocked = mediaRootProblem(config.mediaRoot);
-  if (blocked) return {status: config.mediaRoot ? 'failed' : 'not_configured', detail: blocked};
-  if (!existsSync(config.mediaRoot)) return {status: 'failed', detail: 'The media directory does not exist.'};
+  if (blocked) return { status: config.mediaRoot ? 'failed' : 'not_configured', detail: blocked };
+  if (!existsSync(config.mediaRoot)) return { status: 'failed', detail: 'The media directory does not exist.' };
   try {
     await access(config.mediaRoot, constants.W_OK);
     try {
       const marker = await storageMarker(config.mediaRoot);
-      return {status: 'ok', detail: marker.survivedRestart ? `The media directory is writable and survived a restart (marker from ${marker.createdAt}). Uploads persist.` : `The media directory is writable. Persistence is not yet proven: a marker was written ${marker.createdAt}. Redeploy once, then check this page again; it should say the folder survived a restart.`, persistence: marker.survivedRestart ? 'verified' : 'unverified'};
+      return { status: 'ok', detail: marker.survivedRestart ? `The media directory is writable and survived a restart (marker from ${marker.createdAt}). Uploads persist.` : `The media directory is writable. Persistence is not yet proven: a marker was written ${marker.createdAt}. Redeploy once, then check this page again; it should say the folder survived a restart.`, persistence: marker.survivedRestart ? 'verified' : 'unverified' };
     } catch {
-      return {status: 'ok', detail: 'The media directory is writable.', persistence: 'unverified'};
+      return { status: 'ok', detail: 'The media directory is writable.', persistence: 'unverified' };
     }
   } catch {
-    return {status: 'failed', detail: 'The media directory is not writable.'};
+    return { status: 'failed', detail: 'The media directory is not writable.' };
   }
 }
 
@@ -65,18 +66,18 @@ function acmeChallenge(token) {
   return '';
 }
 
-export function createApp({config, pool, clock = () => Date.now(), forms, shell}) {
+export function createApp({ config, pool, clock = () => Date.now(), forms, shell }) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
-  app.use(express.json({limit: '1mb'}));
+  app.use(express.json({ limit: '1mb' }));
 
   // Anything that is not production must never be indexed, even its error and sign-in responses.
   if (config.appEnv !== 'production') app.use((req, res, next) => { res.setHeader('X-Robots-Tag', 'noindex, nofollow'); next(); });
 
   app.get('/.well-known/acme-challenge/:token', (req, res) => {
     const body = acmeChallenge(req.params.token);
-    if (!body) return send(res, 404, {error: 'Not found.'});
+    if (!body) return send(res, 404, { error: 'Not found.' });
     res.type('text/plain').send(body);
   });
 
@@ -87,7 +88,7 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
     if (req.path === '/api/cron/publish') return next();
     // Health reveals only whether the app and database are up, so it can be checked without the password.
     if (req.path === '/api/health') return next();
-    if (!config.stagingUser || !config.stagingPassword) return send(res, 503, {error: 'Staging access is not configured.'});
+    if (!config.stagingUser || !config.stagingPassword) return send(res, 503, { error: 'Staging access is not configured.' });
     const header = String(req.headers.authorization || '');
     const encoded = header.startsWith('Basic ') ? header.slice(6) : '';
     const decoded = encoded ? Buffer.from(encoded, 'base64').toString('utf8') : '';
@@ -96,7 +97,7 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
     const password = split >= 0 ? decoded.slice(split + 1) : '';
     if (!sameSecret(user, config.stagingUser) || !sameSecret(password, config.stagingPassword)) {
       res.setHeader('WWW-Authenticate', 'Basic realm="Foreign Africa staging"');
-      return send(res, 401, {error: 'Staging sign-in is required.'});
+      return send(res, 401, { error: 'Staging sign-in is required.' });
     }
     next();
   });
@@ -121,43 +122,92 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
 
   function requireDatabase(req, res) {
     if (!pool) {
-      send(res, 503, {error: 'The staff database is not configured.'});
+      send(res, 503, { error: 'The staff database is not configured.' });
       return false;
     }
     if (!config.sessionSecret) {
-      send(res, 503, {error: 'SESSION_SECRET is not configured.'});
+      send(res, 503, { error: 'SESSION_SECRET is not configured.' });
       return false;
     }
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && !originAllowed(req.headers.origin, config, req.headers.host)) {
-      send(res, 403, {error: 'This request was rejected.'});
+      send(res, 403, { error: 'This request was rejected.' });
       return false;
     }
     return true;
   }
 
-  const legacyForms = createCms({env: {}});
+  const legacyForms = createCms({ env: {} });
   const submitBuckets = new Map();
+
+  async function resolveOpenForm(formId) {
+    if (!formId) return null;
+    if (forms) {
+      const custom = (forms() ?? []).find(item => item.id === formId && (item.status === 'publish' || item.status === 'published'));
+      if (custom) return custom;
+    }
+    if (pool) {
+      const dbForm = await eventsStore.getFormDb(pool, formId, { onlyPublished: false }).catch(() => null);
+      if (dbForm) {
+        if (dbForm.status !== 'published') return null;
+        return { ...dbForm, status: 'publish' };
+      }
+    }
+    if (!forms) {
+      const legacy = (legacyForms.list('forms') ?? []).find(item => item.id === formId && (item.status === 'publish' || item.status === 'published'));
+      if (legacy) {
+        return {
+          ...legacy,
+          success: legacy.success || legacy.successMessage || 'Thank you. Your submission has been received.',
+          fields: (legacy.fields ?? []).map(f => ({ ...f, id: f.id || f.name, name: f.name || f.id })),
+        };
+      }
+    }
+    return null;
+  }
 
   // Public form submission: validated on the server, stored privately in MySQL, never written to the deploy tree.
   app.post('/api/cms/submit', route(async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    if (!pool || !config.sessionSecret) return send(res, 503, {error: 'The enquiry could not be saved.'});
-    if (!originAllowed(req.headers.origin, config, req.headers.host)) return send(res, 403, {error: 'This request was rejected.'});
+    if (!pool || !config.sessionSecret) return send(res, 503, { error: 'The enquiry could not be saved.' });
+    if (!originAllowed(req.headers.origin, config, req.headers.host)) return send(res, 403, { error: 'This request was rejected.' });
     const now = clock();
     for (const [key, value] of submitBuckets) if (now - value.start >= 60000) submitBuckets.delete(key);
-    const bucket = submitBuckets.get(req.ip) ?? {start: now, count: 0};
-    if (bucket.count >= 10 || (!submitBuckets.has(req.ip) && submitBuckets.size >= 5000)) { res.setHeader('Retry-After', '60'); return send(res, 429, {error: 'Wait a minute, then try again.'}); }
+    const bucket = submitBuckets.get(req.ip) ?? { start: now, count: 0 };
+    if (bucket.count >= 10 || (!submitBuckets.has(req.ip) && submitBuckets.size >= 5000)) { res.setHeader('Retry-After', '60'); return send(res, 429, { error: 'Wait a minute, then try again.' }); }
     bucket.count += 1; submitBuckets.set(req.ip, bucket);
-    const form = ((forms ? forms() : legacyForms.list('forms')) ?? []).find(item => item.id === req.body?.formId && item.status === 'publish');
-    if (!form) return send(res, 404, {error: 'This form is not open.'});
+
+    if (req.body?.eventSlug || req.body?.eventId) {
+      const ev = req.body.eventSlug
+        ? await eventsStore.getEventBySlug(pool, req.body.eventSlug, { includeDrafts: false, clock })
+        : await eventsStore.getEvent(pool, Number(req.body.eventId), clock).catch(() => null);
+      if (!ev || ev.status !== 'published') return send(res, 404, { error: 'Registration for this event is not available.' });
+      const pubEv = await eventsStore.publicEventView(pool, ev, clock, legacyForms.list('forms'));
+      if (pubEv.registrationMode !== 'form' || !pubEv.registrationStatus?.open) {
+        return send(res, 400, { error: 'Registration for this event is closed.' });
+      }
+    }
+
+    const form = await resolveOpenForm(req.body?.formId);
+    if (!form) return send(res, 404, { error: 'This form is not open.' });
     try {
-      const result = await recordSubmission({pool, clock, secret: config.sessionSecret, form, answers: req.body?.answers, key: typeof req.body?.key === 'string' ? req.body.key.slice(0, 100) : '', ip: req.ip});
-      send(res, 200, {ok: true, reference: result.reference, success: result.success});
+      const result = await recordSubmission({ pool, clock, secret: config.sessionSecret, form, answers: req.body?.answers, key: typeof req.body?.key === 'string' ? req.body.key.slice(0, 100) : '', ip: req.ip });
+      send(res, 200, { ok: true, reference: result.reference, success: result.success });
     } catch (error) {
-      if (error.errors) return send(res, 400, {error: error.message, errors: error.errors});
+      if (error.errors) return send(res, 400, { error: error.message, errors: error.errors });
       throw error;
     }
   }));
+
+  app.get('/api/cms/forms/:id', (req, res, next) => {
+    if (!pool) return next();
+    eventsStore.getFormDb(pool, req.params.id, { onlyPublished: false })
+      .then(dbForm => {
+        if (!dbForm) return next();
+        if (dbForm.status !== 'published') return send(res, 404, { error: 'Not found.' });
+        return send(res, 200, { ...dbForm, status: 'publish' });
+      })
+      .catch(() => next());
+  });
 
   // Everything else under /api/cms (the file collections) needs a Studio session and the legacy.edit permission.
   const cms = createCmsHandler({
@@ -184,33 +234,35 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
   const within = (map, key, max, windowMs) => {
     const now = clock();
     for (const [name, value] of map) if (now - value.start >= windowMs) map.delete(name);
-    const entry = map.get(key) ?? {start: now, count: 0};
+    const entry = map.get(key) ?? { start: now, count: 0 };
     entry.count += 1; map.set(key, entry);
     return entry.count <= max && map.size <= 5000;
   };
   app.all('/api/cron/publish', route(async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    if (!config.cronSecret) return send(res, 404, {error: 'Not found.'});
-    if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return send(res, 405, {error: 'Use POST.'}); }
-    if ((config.appEnv === 'staging' || config.appEnv === 'production') && !req.secure) return send(res, 400, {error: 'HTTPS is required.'});
-    if (!within(cronBuckets, req.ip, 30, 60000)) { res.setHeader('Retry-After', '60'); return send(res, 429, {error: 'Too many requests.'}); }
+    if (!config.cronSecret) return send(res, 404, { error: 'Not found.' });
+    if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return send(res, 405, { error: 'Use POST.' }); }
+    if ((config.appEnv === 'staging' || config.appEnv === 'production') && !req.secure) return send(res, 400, { error: 'HTTPS is required.' });
+    if (!within(cronBuckets, req.ip, 30, 60000)) { res.setHeader('Retry-After', '60'); return send(res, 429, { error: 'Too many requests.' }); }
     const header = String(req.headers.authorization || '');
     const token = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
     if (!token || !sameSecret(token, config.cronSecret)) {
-      if (!within(cronFailures, req.ip, 5, 15 * 60000)) { res.setHeader('Retry-After', '900'); return send(res, 429, {error: 'Too many requests.'}); }
+      if (!within(cronFailures, req.ip, 5, 15 * 60000)) { res.setHeader('Retry-After', '900'); return send(res, 429, { error: 'Too many requests.' }); }
       console.warn('cron publish: rejected an unauthenticated request');
-      return send(res, 401, {error: 'Unauthorized.'});
+      return send(res, 401, { error: 'Unauthorized.' });
     }
-    if (!pool) return send(res, 503, {error: 'The database is not configured.'});
+    if (!pool) return send(res, 503, { error: 'The database is not configured.' });
     try {
-      const promoted = await store.promoteScheduled(pool, clock);
+      const promotedContent = await store.promoteScheduled(pool, clock);
+      const promotedEvents = await eventsStore.promoteScheduledEvents(pool, clock).catch(() => 0);
+      const promoted = promotedContent + promotedEvents;
       const at = new Date(clock()).toISOString();
-      await pool.execute("INSERT INTO settings (setting_key, setting_value) VALUES ('cron_last_run', ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [JSON.stringify({at, promoted})]);
-      send(res, 200, {ok: true, promoted, at});
+      await pool.execute("INSERT INTO settings (setting_key, setting_value) VALUES ('cron_last_run', ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [JSON.stringify({ at, promoted })]);
+      send(res, 200, { ok: true, promoted, at });
     } catch (error) {
       console.error(`cron publish failed: ${error.code || error.name}`);
-      await pool.execute("INSERT INTO activity_logs (actor_id, action, subject_type, subject_id, metadata, created_at) VALUES (NULL, 'system.error', 'cron', '', ?, ?)", [JSON.stringify({source: 'cron.publish', code: String(error.code || error.name)}), sqlTime(clock())]).catch(() => {});
-      send(res, 500, {error: 'The run failed.'});
+      await pool.execute("INSERT INTO activity_logs (actor_id, action, subject_type, subject_id, metadata, created_at) VALUES (NULL, 'system.error', 'cron', '', ?, ?)", [JSON.stringify({ source: 'cron.publish', code: String(error.code || error.name) }), sqlTime(clock())]).catch(() => { });
+      send(res, 500, { error: 'The run failed.' });
     }
   }));
 
@@ -219,45 +271,117 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
   });
 
   app.get('/sitemap.xml', route(async (req, res) => {
-    if (config.appEnv !== 'production') return send(res, 404, {error: 'Not found.'});
-    if (!pool) return send(res, 503, {error: 'The staff database is not configured.'});
-    const listed = await store.listContent(pool, {includeDrafts: false, pageSize: 100, sort: 'published', clock});
-    res.type('application/xml').send(sitemapXml(config, listed.items.map(item => ({...item, content_type: item.type}))));
+    if (config.appEnv !== 'production') return send(res, 404, { error: 'Not found.' });
+    if (!pool) return send(res, 503, { error: 'The staff database is not configured.' });
+    const listed = await store.listContent(pool, { includeDrafts: false, pageSize: 100, sort: 'published', clock });
+    const listedEvents = await eventsStore.listEventsStore(pool, { includeDrafts: false, pageSize: 100, clock }).catch(() => ({ items: [] }));
+    const entries = [
+      ...listed.items.map(item => ({ ...item, content_type: item.type })),
+      ...listedEvents.items.map(item => ({ ...item, content_type: 'event' })),
+    ];
+    res.type('application/xml').send(sitemapXml(config, entries));
   }));
 
   app.get('/api/health', route(async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    if (!pool) return send(res, 503, {ok: false, phase: 'running', database: 'not_configured'});
+    if (!pool) return send(res, 503, { ok: false, phase: 'running', database: 'not_configured' });
     try {
       await store.databaseReachable(pool);
-      send(res, 200, {ok: true, phase: 'running', database: 'ok'});
+      send(res, 200, { ok: true, phase: 'running', database: 'ok' });
     } catch (error) {
       // The error code only (never the driver's message, which can name the user and host).
-      send(res, 503, {ok: false, phase: 'running', database: 'unreachable', code: String(error.code || error.name || 'unknown')});
+      send(res, 503, { ok: false, phase: 'running', database: 'unreachable', code: String(error.code || error.name || 'unknown') });
     }
   }));
 
   app.get('/api/public/content', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await store.promoteDue(pool, clock);
-    const listed = await store.listContent(pool, {type: req.query.type, q: req.query.q, includeDrafts: false, page: req.query.page, pageSize: req.query.pageSize, sort: 'published', clock});
-    send(res, 200, {...listed, items: listed.items.map(store.publicView)});
+    const listed = await store.listContent(pool, { type: req.query.type, q: req.query.q, includeDrafts: false, page: req.query.page, pageSize: req.query.pageSize, sort: 'published', clock });
+    send(res, 200, { ...listed, items: listed.items.map(store.publicView) });
   }));
 
   app.get('/api/public/content/:type/:slug', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const item = await store.publicItem(pool, req.params.type, req.params.slug, clock);
-    if (!item) return send(res, 404, {error: 'Not found.'});
+    if (!item) return send(res, 404, { error: 'Not found.' });
     const redirect = externalRedirect(item);
     if (redirect && req.query.format === 'html') return res.redirect(302, redirect);
     if (req.query.format === 'html') return res.type('html').send(renderContentPage(config, item));
-    send(res, 200, {item: store.publicView(item)});
+    send(res, 200, { item: store.publicView(item) });
+  }));
+
+  // ---- Public Events API (Database-Backed) ----
+  app.get('/api/public/events', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const fallbackForms = legacyForms.list('forms') ?? [];
+    const listed = await eventsStore.listEventsStore(pool, {
+      schedule: req.query.schedule,
+      q: req.query.q,
+      category: req.query.category,
+      includeDrafts: false,
+      page: req.query.page,
+      pageSize: req.query.pageSize || 100,
+      sort: req.query.sort || 'event_date_desc',
+      clock,
+    });
+    const items = [];
+    for (const item of listed.items) {
+      items.push(await eventsStore.publicEventView(pool, item, clock, fallbackForms));
+    }
+    const suppressedSlugs = await eventsStore.suppressedEventSlugs(pool, clock);
+    send(res, 200, { ...listed, items, suppressedSlugs });
+  }));
+
+  app.get('/api/public/events/:slug', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const item = await eventsStore.getEventBySlug(pool, req.params.slug, { includeDrafts: false, clock });
+    if (!item) return send(res, 404, { error: 'Event not found.' });
+    if (req.query.format === 'html') return res.type('html').send(renderContentPage(config, item));
+    const fallbackForms = legacyForms.list('forms') ?? [];
+    send(res, 200, { item: await eventsStore.publicEventView(pool, item, clock, fallbackForms) });
+  }));
+
+  app.post('/api/public/events/:slug/register', route(async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    if (!pool || !config.sessionSecret) return send(res, 503, { error: 'Registration could not be saved.' });
+    if (!originAllowed(req.headers.origin, config, req.headers.host)) return send(res, 403, { error: 'This request was rejected.' });
+    const now = clock();
+    for (const [key, value] of submitBuckets) if (now - value.start >= 60000) submitBuckets.delete(key);
+    const bucket = submitBuckets.get(req.ip) ?? { start: now, count: 0 };
+    if (bucket.count >= 10 || (!submitBuckets.has(req.ip) && submitBuckets.size >= 5000)) { res.setHeader('Retry-After', '60'); return send(res, 429, { error: 'Wait a minute, then try again.' }); }
+    bucket.count += 1; submitBuckets.set(req.ip, bucket);
+
+    const item = await eventsStore.getEventBySlug(pool, req.params.slug, { includeDrafts: false, clock });
+    if (!item) return send(res, 404, { error: 'Event not found.' });
+    const fallbackForms = legacyForms.list('forms') ?? [];
+    const pubEv = await eventsStore.publicEventView(pool, item, clock, fallbackForms);
+    if (pubEv.registrationMode !== 'form' || !pubEv.registrationStatus?.open) {
+      return send(res, 400, { error: 'Registration for this event is closed.' });
+    }
+    const form = await resolveOpenForm(pubEv.registrationFormKey);
+    if (!form) return send(res, 404, { error: 'This registration form is not open.' });
+    try {
+      const result = await recordSubmission({
+        pool,
+        clock,
+        secret: config.sessionSecret,
+        form,
+        answers: req.body?.answers,
+        key: typeof req.body?.key === 'string' ? req.body.key.slice(0, 100) : '',
+        ip: req.ip,
+      });
+      send(res, 200, { ok: true, reference: result.reference, success: result.success });
+    } catch (error) {
+      if (error.errors) return send(res, 400, { error: error.message, errors: error.errors });
+      throw error;
+    }
   }));
 
   app.get(['/media/:id', '/media/:id/thumb'], route(async (req, res) => {
-    if (!pool || !/^\d+$/.test(req.params.id)) return send(res, 404, {error: 'Not found.'});
+    if (!pool || !/^\d+$/.test(req.params.id)) return send(res, 404, { error: 'Not found.' });
     const opened = await openMedia(pool, config, Number(req.params.id), req.path.endsWith('/thumb'));
-    if (!opened) return send(res, 404, {error: 'Not found.'});
+    if (!opened) return send(res, 404, { error: 'Not found.' });
     if (opened.redirect) return res.redirect(302, opened.redirect);
     // Each stored file has a unique name, so its name is a perfect ETag. Revalidating (instead of caching for a year)
     // means a replaced image shows up for everyone within minutes while unchanged files still return 304.
@@ -271,9 +395,9 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
 
   app.post('/api/staff/login', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
-    const result = await store.login({pool, config, clock, email: req.body?.email, password: req.body?.password, ip: req.ip, userAgent: req.headers['user-agent']});
+    const result = await store.login({ pool, config, clock, email: req.body?.email, password: req.body?.password, ip: req.ip, userAgent: req.headers['user-agent'] });
     res.setHeader('Set-Cookie', cookie(result.token, config, 60 * 60 * 24 * 7));
-    send(res, 200, {user: result.user});
+    send(res, 200, { user: result.user });
   }));
 
   app.post('/api/staff/logout', route(async (req, res) => {
@@ -281,15 +405,15 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
     const user = await actor(req);
     await store.revokeToken(pool, config, clock, readCookie(req.headers.cookie, cookieName), user?.id);
     res.setHeader('Set-Cookie', cookie('', config, 0));
-    send(res, 200, {ok: true});
+    send(res, 200, { ok: true });
   }));
 
   app.get('/api/staff/session', route(async (req, res) => {
-    if (!pool || !config.sessionSecret) return send(res, 200, {user: null, configured: false});
+    if (!pool || !config.sessionSecret) return send(res, 200, { user: null, configured: false });
     try {
-      send(res, 200, {user: await actor(req), configured: true, legacyFileEditing: Boolean(config.legacyFileEditing)});
+      send(res, 200, { user: await actor(req), configured: true, legacyFileEditing: Boolean(config.legacyFileEditing) });
     } catch {
-      send(res, 200, {user: null, configured: true, error: 'The staff database is not reachable.'});
+      send(res, 200, { user: null, configured: true, error: 'The staff database is not reachable.' });
     }
   }));
 
@@ -300,7 +424,7 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
     const counts = await store.dashboard(pool);
     let database = 'ok';
     try { await store.databaseReachable(pool); } catch { database = 'failed'; }
-    send(res, 200, {...counts, health: {database, media: await storageCheck(config), backup: {status: 'unknown', detail: 'Hostinger backups are managed in hPanel. This screen cannot confirm them.'}}});
+    send(res, 200, { ...counts, health: { database, media: await storageCheck(config), backup: { status: 'unknown', detail: 'Hostinger backups are managed in hPanel. This screen cannot confirm them.' } } });
   }));
 
   app.get('/api/staff/overview', route(async (req, res) => {
@@ -308,13 +432,13 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
     const user = await requireUser('content.read')(req);
     await store.promoteDue(pool, clock);
     res.setHeader('Cache-Control', 'no-store');
-    send(res, 200, await buildOverview({pool, config, user, clock, shell}));
+    send(res, 200, await buildOverview({ pool, config, user, clock, shell }));
   }));
 
   app.get('/api/staff/health', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('health.read')(req);
-    let database = {status: 'ok', detail: 'The database answered.'};
+    let database = { status: 'ok', detail: 'The database answered.' };
     let recentErrors = null;
     try {
       await store.databaseReachable(pool);
@@ -324,75 +448,75 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
       recentErrors = Number(errors[0].n);
       var uploadFailures = Number(uploads[0].n);
     } catch {
-      database = {status: 'failed', detail: 'The database is not reachable.'};
+      database = { status: 'failed', detail: 'The database is not reachable.' };
     }
-    let cron = {configured: Boolean(config.cronSecret), lastRun: null};
+    let cron = { configured: Boolean(config.cronSecret), lastRun: null };
     try {
       const [runs] = await pool.execute("SELECT setting_value FROM settings WHERE setting_key = 'cron_last_run'");
       if (runs[0]) cron.lastRun = JSON.parse(runs[0].setting_value);
     } catch { /* health must not fail because of this */ }
-    send(res, 200, {database, media: await storageCheck(config), cron, recentErrors, uploadFailures: uploadFailures ?? null, backup: {status: 'unknown', detail: 'Hostinger backups are managed in hPanel. This screen cannot confirm them.'}});
+    send(res, 200, { database, media: await storageCheck(config), cron, recentErrors, uploadFailures: uploadFailures ?? null, backup: { status: 'unknown', detail: 'Hostinger backups are managed in hPanel. This screen cannot confirm them.' } });
   }));
 
   app.get('/api/staff/settings', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('settings.read')(req);
-    send(res, 200, {appEnv: config.appEnv, publicSiteUrl: config.publicSiteUrl, mediaConfigured: Boolean(config.mediaRoot), cookieSecure: config.cookieSecure, cronConfigured: Boolean(config.cronSecret), dbConnectionLimit: config.dbConnectionLimit, checks: deploymentChecks(config, process.env, {distBuilt: Boolean(shell && shell()), distFreshness: buildFreshness(projectRoot)})});
+    send(res, 200, { appEnv: config.appEnv, publicSiteUrl: config.publicSiteUrl, mediaConfigured: Boolean(config.mediaRoot), cookieSecure: config.cookieSecure, cronConfigured: Boolean(config.cronSecret), dbConnectionLimit: config.dbConnectionLimit, checks: deploymentChecks(config, process.env, { distBuilt: Boolean(shell && shell()), distFreshness: buildFreshness(projectRoot) }) });
   }));
 
   app.get('/api/staff/users', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('users.read')(req);
-    send(res, 200, {users: await store.listUsers(pool)});
+    send(res, 200, { users: await store.listUsers(pool) });
   }));
 
   app.post('/api/staff/users', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('users.manage')(req);
-    send(res, 201, {user: await store.createUser({pool, config, clock, actor: user, input: req.body ?? {}})});
+    send(res, 201, { user: await store.createUser({ pool, config, clock, actor: user, input: req.body ?? {} }) });
   }));
 
   app.patch('/api/staff/users/:id', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('users.manage')(req);
-    send(res, 200, {user: await store.updateUser({pool, clock, actor: user, userId: Number(req.params.id), input: req.body ?? {}})});
+    send(res, 200, { user: await store.updateUser({ pool, clock, actor: user, userId: Number(req.params.id), input: req.body ?? {} }) });
   }));
 
   app.post('/api/staff/me/password', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser()(req);
-    await store.changePassword({pool, config, clock, user, currentPassword: req.body?.currentPassword, newPassword: req.body?.newPassword});
-    send(res, 200, {ok: true});
+    await store.changePassword({ pool, config, clock, user, currentPassword: req.body?.currentPassword, newPassword: req.body?.newPassword });
+    send(res, 200, { ok: true });
   }));
 
   app.get('/api/staff/activity', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('activity.read')(req);
-    send(res, 200, {activity: await store.listActivity(pool)});
+    send(res, 200, { activity: await store.listActivity(pool) });
   }));
 
   app.get('/api/staff/content', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('content.read')(req);
     await store.promoteDue(pool, clock);
-    send(res, 200, await store.listContent(pool, {type: req.query.type, status: req.query.status, q: req.query.q, includeDrafts: true, page: req.query.page, pageSize: req.query.pageSize, sort: req.query.sort, clock}));
+    send(res, 200, await store.listContent(pool, { type: req.query.type, status: req.query.status, q: req.query.q, includeDrafts: true, page: req.query.page, pageSize: req.query.pageSize, sort: req.query.sort, clock }));
   }));
 
   app.get('/api/staff/media', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('content.read')(req);
-    send(res, 200, await listMedia(pool, {q: req.query.q, type: req.query.type, sort: req.query.sort, page: req.query.page, pageSize: req.query.pageSize}));
+    send(res, 200, await listMedia(pool, { q: req.query.q, type: req.query.type, sort: req.query.sort, page: req.query.page, pageSize: req.query.pageSize }));
   }));
 
   app.post('/api/staff/media', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('content.create')(req);
     try {
-      const asset = await saveUpload({pool, config, clock, actor: user, upload: await readUpload(req)});
+      const asset = await saveUpload({ pool, config, clock, actor: user, upload: await readUpload(req) });
       await pool.execute('INSERT INTO activity_logs (actor_id, action, subject_type, subject_id, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)', [user.id, 'media.uploaded', 'media', asset.id, '{}', sqlTime(clock())]);
-      send(res, 201, {asset});
+      send(res, 201, { asset });
     } catch (error) {
-      if (error.status && error.status < 500) await pool.execute('INSERT INTO activity_logs (actor_id, action, subject_type, subject_id, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)', [user.id, 'media.upload.failure', 'media', '', JSON.stringify({status: error.status}), sqlTime(clock())]);
+      if (error.status && error.status < 500) await pool.execute('INSERT INTO activity_logs (actor_id, action, subject_type, subject_id, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)', [user.id, 'media.upload.failure', 'media', '', JSON.stringify({ status: error.status }), sqlTime(clock())]);
       throw error;
     }
   }));
@@ -400,72 +524,72 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
   app.patch('/api/staff/media/:id', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('content.read')(req);
-    send(res, 200, {asset: await updateMedia({pool, clock, actor: user, canEditAny: allows(user.roles, 'content.update.any'), id: Number(req.params.id), input: req.body ?? {}})});
+    send(res, 200, { asset: await updateMedia({ pool, clock, actor: user, canEditAny: allows(user.roles, 'content.update.any'), id: Number(req.params.id), input: req.body ?? {} }) });
   }));
 
   app.get('/api/staff/media/:id', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('content.read')(req);
-    send(res, 200, {asset: await getMedia(pool, Number(req.params.id)), usage: await mediaUsage(pool, Number(req.params.id))});
+    send(res, 200, { asset: await getMedia(pool, Number(req.params.id)), usage: await mediaUsage(pool, Number(req.params.id)) });
   }));
 
   app.post('/api/staff/media/:id/replace', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('content.update.any')(req);
-    const asset = await replaceUpload({pool, config, clock, id: Number(req.params.id), upload: await readUpload(req)});
+    const asset = await replaceUpload({ pool, config, clock, id: Number(req.params.id), upload: await readUpload(req) });
     await pool.execute('INSERT INTO activity_logs (actor_id, action, subject_type, subject_id, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)', [user.id, 'media.replaced', 'media', req.params.id, '{}', sqlTime(clock())]);
-    send(res, 200, {asset});
+    send(res, 200, { asset });
   }));
 
   app.delete('/api/staff/media/:id', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('content.update.any')(req);
-    await removeMedia({pool, config, clock, id: Number(req.params.id)});
+    await removeMedia({ pool, config, clock, id: Number(req.params.id) });
     await pool.execute('INSERT INTO activity_logs (actor_id, action, subject_type, subject_id, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)', [user.id, 'media.deleted', 'media', req.params.id, '{}', sqlTime(clock())]);
-    send(res, 200, {ok: true});
+    send(res, 200, { ok: true });
   }));
 
   app.post('/api/staff/content', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('content.create')(req);
-    send(res, 201, {item: await store.createContent({pool, clock, actor: user, input: req.body ?? {}})});
+    send(res, 201, { item: await store.createContent({ pool, clock, actor: user, input: req.body ?? {} }) });
   }));
 
   app.post('/api/staff/content/bulk', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('content.read')(req);
-    send(res, 200, {results: await store.bulkContent({pool, clock, actor: user, action: req.body?.action, ids: req.body?.ids})});
+    send(res, 200, { results: await store.bulkContent({ pool, clock, actor: user, action: req.body?.action, ids: req.body?.ids }) });
   }));
 
   app.get('/api/staff/content/:id', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('content.read')(req);
-    send(res, 200, {item: await store.getContent(pool, Number(req.params.id))});
+    send(res, 200, { item: await store.getContent(pool, Number(req.params.id)) });
   }));
 
   app.patch('/api/staff/content/:id', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('content.read')(req);
-    send(res, 200, {item: await store.updateContent({pool, clock, actor: user, id: Number(req.params.id), input: req.body ?? {}})});
+    send(res, 200, { item: await store.updateContent({ pool, clock, actor: user, id: Number(req.params.id), input: req.body ?? {} }) });
   }));
 
   app.post('/api/staff/content/:id/state', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('content.read')(req);
-    send(res, 200, {item: await store.setContentState({pool, clock, actor: user, id: Number(req.params.id), status: req.body?.status, publishedAt: req.body?.publishedAt})});
+    send(res, 200, { item: await store.setContentState({ pool, clock, actor: user, id: Number(req.params.id), status: req.body?.status, publishedAt: req.body?.publishedAt }) });
   }));
 
   app.delete('/api/staff/content/:id', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('content.read')(req);
-    await store.deleteContent({pool, clock, actor: user, id: Number(req.params.id)});
-    send(res, 200, {ok: true});
+    await store.deleteContent({ pool, clock, actor: user, id: Number(req.params.id) });
+    send(res, 200, { ok: true });
   }));
 
   app.get('/api/staff/content/:id/revisions', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('content.read')(req);
-    send(res, 200, {revisions: await store.revisions(pool, Number(req.params.id))});
+    send(res, 200, { revisions: await store.revisions(pool, Number(req.params.id)) });
   }));
 
   app.get('/api/staff/content/:id/preview', route(async (req, res) => {
@@ -477,20 +601,151 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
     const html = shell ? shell() : '';
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
-    if (!html) return res.type('html').send(renderContentPage({...config, appEnv: 'development'}, item));
+    if (!html) return res.type('html').send(renderContentPage({ ...config, appEnv: 'development' }, item));
     res.type('html').send(injectPreviewArticle(html, config, item));
   }));
 
   app.post('/api/staff/content/:id/duplicate', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('content.create')(req);
-    send(res, 201, {item: await store.duplicateContent({pool, clock, actor: user, id: Number(req.params.id)})});
+    send(res, 201, { item: await store.duplicateContent({ pool, clock, actor: user, id: Number(req.params.id) }) });
   }));
 
   app.post('/api/staff/content/:id/restore', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('content.read')(req);
-    send(res, 200, {item: await store.restoreRevision({pool, clock, actor: user, contentId: Number(req.params.id), revisionId: Number(req.body?.revisionId)})});
+    send(res, 200, { item: await store.restoreRevision({ pool, clock, actor: user, contentId: Number(req.params.id), revisionId: Number(req.body?.revisionId) }) });
+  }));
+
+  // ---- Staff Events Management API (Database-Backed) ----
+  app.get('/api/staff/events', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    await requireUser('content.read')(req);
+    send(res, 200, await eventsStore.listEventsStore(pool, {
+      status: req.query.status,
+      schedule: req.query.schedule,
+      q: req.query.q,
+      category: req.query.category,
+      includeDrafts: true,
+      page: req.query.page,
+      pageSize: req.query.pageSize,
+      sort: req.query.sort,
+      clock,
+    }));
+  }));
+
+  app.post('/api/staff/events', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('content.create')(req);
+    send(res, 201, { item: await eventsStore.createEvent({ pool, clock, actor: user, input: req.body ?? {} }) });
+  }));
+
+  app.post('/api/staff/events/bulk', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('content.read')(req);
+    send(res, 200, { results: await eventsStore.bulkEvents({ pool, clock, actor: user, action: req.body?.action, ids: req.body?.ids }) });
+  }));
+
+  app.get('/api/staff/events/:id', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    await requireUser('content.read')(req);
+    send(res, 200, { item: await eventsStore.getEvent(pool, Number(req.params.id), clock) });
+  }));
+
+  app.patch('/api/staff/events/:id', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('content.read')(req);
+    send(res, 200, { item: await eventsStore.updateEvent({ pool, clock, actor: user, id: Number(req.params.id), input: req.body ?? {} }) });
+  }));
+
+  app.post('/api/staff/events/:id/state', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('content.read')(req);
+    send(res, 200, {
+      item: await eventsStore.setEventState({
+        pool,
+        clock,
+        actor: user,
+        id: Number(req.params.id),
+        status: req.body?.status,
+        publishedAt: req.body?.publishedAt,
+        cancelled: req.body?.cancelled,
+        cancellationNote: req.body?.cancellationNote,
+      }),
+    });
+  }));
+
+  app.delete('/api/staff/events/:id', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('content.read')(req);
+    await eventsStore.deleteEvent({ pool, clock, actor: user, id: Number(req.params.id) });
+    send(res, 200, { ok: true });
+  }));
+
+  app.get('/api/staff/events/:id/revisions', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    await requireUser('content.read')(req);
+    send(res, 200, { revisions: await eventsStore.eventRevisions(pool, Number(req.params.id)) });
+  }));
+
+  app.get('/api/staff/events/:id/preview', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('content.read')(req);
+    const item = await eventsStore.getEvent(pool, Number(req.params.id), clock);
+    if (!eventsStore.editorCanSeeEvent(user, item)) throw store.fail(403, 'You cannot preview that event.');
+    const fallbackForms = legacyForms.list('forms') ?? [];
+    const pubView = await eventsStore.publicEventView(pool, item, clock, fallbackForms);
+    const previewItem = {
+      ...item,
+      ...pubView,
+      id: item.id,
+      dbId: item.id,
+      type: 'event',
+      status: item.status,
+      meetingUrl: item.meetingUrl,
+    };
+
+    const html = shell ? shell() : '';
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    if (!html) return res.type('html').send(renderContentPage({ ...config, appEnv: 'development' }, previewItem));
+    res.type('html').send(injectPreviewArticle(html, config, previewItem));
+  }));
+
+  app.post('/api/staff/events/:id/duplicate', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('content.create')(req);
+    send(res, 201, { item: await eventsStore.duplicateEvent({ pool, clock, actor: user, id: Number(req.params.id) }) });
+  }));
+
+  app.post('/api/staff/events/:id/restore', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('content.read')(req);
+    send(res, 200, { item: await eventsStore.restoreEventRevision({ pool, clock, actor: user, eventId: Number(req.params.id), revisionId: Number(req.body?.revisionId) }) });
+  }));
+
+  // ---- Database-Backed Forms Management API ----
+  app.get('/api/staff/forms', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('content.read')(req);
+    let list = await eventsStore.listFormsDb(pool, { onlyPublished: false });
+    if (!list.some(f => f.fields && f.fields.length)) {
+      await eventsStore.seedEventsAndForms({ pool, directory: projectRoot, actor: user, clock }).catch(() => { });
+      list = await eventsStore.listFormsDb(pool, { onlyPublished: false });
+    }
+    send(res, 200, { forms: list, canPublish: allows(user.roles, 'content.publish') });
+  }));
+
+  app.post('/api/staff/forms', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('content.publish')(req);
+    send(res, 201, { form: await eventsStore.saveFormDb({ pool, clock, actor: user, input: req.body ?? {} }) });
+  }));
+
+  app.patch('/api/staff/forms/:key', route(async (req, res) => {
+    if (!requireDatabase(req, res)) return;
+    const user = await requireUser('content.publish')(req);
+    send(res, 200, { form: await eventsStore.saveFormDb({ pool, clock, actor: user, input: { ...(req.body ?? {}), formKey: req.params.key } }) });
   }));
 
   app.post('/api/staff/gemini/assist', route(async (req, res) => {
@@ -503,14 +758,14 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
       context: req.body?.context,
     });
     if (!result.ok) {
-      return send(res, result.code === 'API_KEY_MISSING' ? 503 : 500, {error: result.error, code: result.code});
+      return send(res, result.code === 'API_KEY_MISSING' ? 503 : 500, { error: result.error, code: result.code });
     }
     await store.recordActivity(pool, clock, {
       actorId: user.id,
       action: 'gemini.assist',
       subjectType: 'content',
       subjectId: req.body?.context?.id ? String(req.body.context.id) : null,
-      metadata: {action: req.body?.action || 'custom'},
+      metadata: { action: req.body?.action || 'custom' },
     });
     send(res, 200, result);
   }));
@@ -518,13 +773,13 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
   app.get('/api/staff/submissions', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('submissions.read')(req);
-    send(res, 200, await listSubmissions({pool, clock, actor: user, status: req.query.status, form: req.query.form, mine: req.query.mine === '1', page: req.query.page, pageSize: req.query.pageSize}));
+    send(res, 200, await listSubmissions({ pool, clock, actor: user, status: req.query.status, form: req.query.form, mine: req.query.mine === '1', page: req.query.page, pageSize: req.query.pageSize }));
   }));
 
   app.get('/api/staff/submissions.csv', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('submissions.export')(req);
-    const csv = await exportCsv({pool, clock, actor: user, status: req.query.status, form: req.query.form});
+    const csv = await exportCsv({ pool, clock, actor: user, status: req.query.status, form: req.query.form });
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="submissions.csv"');
     res.setHeader('Cache-Control', 'no-store');
@@ -535,46 +790,46 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('submissions.read')(req);
     res.setHeader('Cache-Control', 'no-store');
-    send(res, 200, {item: await getSubmission({pool, clock, actor: user, id: Number(req.params.id)})});
+    send(res, 200, { item: await getSubmission({ pool, clock, actor: user, id: Number(req.params.id) }) });
   }));
 
   app.patch('/api/staff/submissions/:id', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('submissions.manage')(req);
-    await updateSubmission({pool, clock, actor: user, id: Number(req.params.id), input: req.body ?? {}});
-    send(res, 200, {item: await getSubmission({pool, clock, actor: user, id: Number(req.params.id)})});
+    await updateSubmission({ pool, clock, actor: user, id: Number(req.params.id), input: req.body ?? {} });
+    send(res, 200, { item: await getSubmission({ pool, clock, actor: user, id: Number(req.params.id) }) });
   }));
 
   app.post('/api/staff/submissions/:id/notes', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('submissions.manage')(req);
-    await addNote({pool, clock, actor: user, id: Number(req.params.id), note: req.body?.note});
-    send(res, 201, {item: await getSubmission({pool, clock, actor: user, id: Number(req.params.id)})});
+    await addNote({ pool, clock, actor: user, id: Number(req.params.id), note: req.body?.note });
+    send(res, 201, { item: await getSubmission({ pool, clock, actor: user, id: Number(req.params.id) }) });
   }));
 
   app.get('/api/staff/terms', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('content.read')(req);
-    send(res, 200, {terms: await listTerms(pool, {vocabulary: req.query.vocabulary, q: req.query.q})});
+    send(res, 200, { terms: await listTerms(pool, { vocabulary: req.query.vocabulary, q: req.query.q }) });
   }));
 
   app.post('/api/staff/terms', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('terms.manage')(req);
-    send(res, 201, {term: await createTerm({pool, clock, actor: user, input: req.body ?? {}})});
+    send(res, 201, { term: await createTerm({ pool, clock, actor: user, input: req.body ?? {} }) });
   }));
 
   app.patch('/api/staff/terms/:id', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('terms.manage')(req);
-    send(res, 200, {term: await updateTerm({pool, clock, actor: user, id: Number(req.params.id), input: req.body ?? {}})});
+    send(res, 200, { term: await updateTerm({ pool, clock, actor: user, id: Number(req.params.id), input: req.body ?? {} }) });
   }));
 
   app.delete('/api/staff/terms/:id', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('terms.manage')(req);
-    await deleteTerm({pool, clock, actor: user, id: Number(req.params.id), mergeInto: req.query.mergeInto, detach: req.query.detach === '1'});
-    send(res, 200, {ok: true});
+    await deleteTerm({ pool, clock, actor: user, id: Number(req.params.id), mergeInto: req.query.mergeInto, detach: req.query.detach === '1' });
+    send(res, 200, { ok: true });
   }));
 
   // ---- Homepage and hero: draft/publish content areas. Editors change approved fields only; see site-schema.js.
@@ -588,7 +843,7 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('homepage.edit')(req);
     const settings = await siteStore.getSettings(pool);
-    send(res, 200, {areas: await siteStore.overview(pool), settings, canPublish: siteStore.canPublish(user, settings), canManage: allows(user.roles, 'homepage.manage')});
+    send(res, 200, { areas: await siteStore.overview(pool), settings, canPublish: siteStore.canPublish(user, settings), canManage: allows(user.roles, 'homepage.manage') });
   }));
 
   // The real site, with the DRAFT content embedded, for the editor's desktop and mobile previews.
@@ -599,14 +854,14 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
     res.setHeader('Content-Security-Policy', "frame-ancestors 'self'");
-    if (!html) return send(res, 404, {error: 'Previews need the built site. Run npm run build, then start the server.'});
-    res.type('html').send(injectSiteData(html, await siteStore.draftSite({pool, config})));
+    if (!html) return send(res, 404, { error: 'Previews need the built site. Run npm run build, then start the server.' });
+    res.type('html').send(injectSiteData(html, await siteStore.draftSite({ pool, config })));
   }));
 
   app.put('/api/staff/site/settings', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('homepage.manage')(req);
-    send(res, 200, {settings: await siteStore.saveSettings({pool, clock, actor: user, input: req.body ?? {}})});
+    send(res, 200, { settings: await siteStore.saveSettings({ pool, clock, actor: user, input: req.body ?? {} }) });
   }));
 
   app.get('/api/staff/site/:key', route(async (req, res) => {
@@ -614,43 +869,45 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
     const user = await requireUser('homepage.edit')(req);
     const settings = await siteStore.getSettings(pool);
     res.setHeader('Cache-Control', 'no-store');
-    send(res, 200, {...(await siteStore.getDocument({pool, config, key: req.params.key})), canPublish: siteStore.canPublish(user, settings), settings});
+    send(res, 200, { ...(await siteStore.getDocument({ pool, config, key: req.params.key })), canPublish: siteStore.canPublish(user, settings), settings });
   }));
 
   app.put('/api/staff/site/:key', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('homepage.edit')(req);
-    send(res, 200, {state: await siteStore.saveDraft({pool, config, clock, actor: user, key: req.params.key, document: req.body?.document, baseVersion: req.body?.baseVersion})});
+    send(res, 200, { state: await siteStore.saveDraft({ pool, config, clock, actor: user, key: req.params.key, document: req.body?.document, baseVersion: req.body?.baseVersion }) });
   }));
 
   app.post('/api/staff/site/:key/publish', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('homepage.edit')(req);
-    send(res, 200, {state: await siteStore.publish({pool, config, clock, actor: user, key: req.params.key, baseVersion: req.body?.baseVersion})});
+    send(res, 200, { state: await siteStore.publish({ pool, config, clock, actor: user, key: req.params.key, baseVersion: req.body?.baseVersion }) });
   }));
 
   app.post('/api/staff/site/:key/discard', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('homepage.edit')(req);
-    send(res, 200, {state: await siteStore.discardDraft({pool, clock, actor: user, key: req.params.key})});
+    send(res, 200, { state: await siteStore.discardDraft({ pool, clock, actor: user, key: req.params.key }) });
   }));
 
   app.get('/api/staff/site/:key/revisions', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('homepage.edit')(req);
-    send(res, 200, {revisions: await siteStore.listRevisions({pool, key: req.params.key})});
+    send(res, 200, { revisions: await siteStore.listRevisions({ pool, key: req.params.key }) });
   }));
 
   app.post('/api/staff/site/:key/restore', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     const user = await requireUser('homepage.edit')(req);
-    send(res, 200, {state: await siteStore.restoreRevision({pool, config, clock, actor: user, key: req.params.key, revisionId: Number(req.body?.revisionId), baseVersion: req.body?.baseVersion})});
+    send(res, 200, { state: await siteStore.restoreRevision({ pool, config, clock, actor: user, key: req.params.key, revisionId: Number(req.body?.revisionId), baseVersion: req.body?.baseVersion }) });
   }));
 
   app.post('/api/staff/schedule/run', route(async (req, res) => {
     if (!requireDatabase(req, res)) return;
     await requireUser('content.publish')(req);
-    send(res, 200, {promoted: await store.promoteScheduled(pool, clock)});
+    const promotedContent = await store.promoteScheduled(pool, clock);
+    const promotedEvents = await eventsStore.promoteScheduledEvents(pool, clock).catch(() => 0);
+    send(res, 200, { promoted: promotedContent + promotedEvents });
   }));
 
   app.use((error, req, res, next) => {
@@ -658,7 +915,7 @@ export function createApp({config, pool, clock = () => Date.now(), forms, shell}
     const status = error.status || 500;
     const message = status === 500 && config.appEnv !== 'test' ? 'Something went wrong.' : error.message;
     if (status === 500) console.error(error);
-    send(res, status, {error: message, ...(error.problems ? {problems: error.problems} : {})});
+    send(res, status, { error: message, ...(error.problems ? { problems: error.problems } : {}) });
   });
 
   return app;

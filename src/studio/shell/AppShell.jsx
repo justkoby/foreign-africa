@@ -4,7 +4,7 @@ import {allows} from '../../../server/permissions.js';
 import {api} from '../api.js';
 import {Avatar, Button, Chip, IconButton, Menu, MenuHeading, MenuItem, MenuSeparator, StatusChip} from '../ui/index.jsx';
 
-const typeLabel = {news: 'News', commentary: 'Commentary', page: 'Page', programme: 'Programme'};
+const typeLabel = {news: 'News', commentary: 'Commentary', page: 'Page', programme: 'Programme', event: 'Event'};
 
 // One place that defines the sidebar. Items only appear for roles that may use them.
 export function navigation(user) {
@@ -12,24 +12,33 @@ export function navigation(user) {
   const groups = [
     {group: 'Overview', items: [{id: '/', label: 'Dashboard', icon: LayoutDashboard}]},
     {group: 'Content', items: [
-      {id: '/content/news', label: 'News', icon: Newspaper}, {id: '/content/commentary', label: 'Commentaries', icon: PenLine},
-      {id: '/content/page', label: 'Pages', icon: FileText}, {id: '/content/programme', label: 'Programmes', icon: Layers},
+      {id: '/content/news', label: 'News', icon: Newspaper},
+      {id: '/content/commentary', label: 'Commentaries', icon: PenLine},
+      {id: '/events', label: 'Events', icon: CalendarDays},
+      {id: '/content/page', label: 'Pages', icon: FileText},
+      {id: '/content/programme', label: 'Programmes', icon: Layers},
       ...(can('content.read') ? [{id: '/media', label: 'Media library', icon: ImageIcon}] : []),
       ...(can('terms.manage') ? [{id: '/terms', label: 'Categories and tags', icon: Tags}] : []),
     ]},
     ...(can('homepage.edit') ? [{group: 'Foreign Africa', items: [{id: '/site/hero', label: 'Hero slider', icon: GalleryHorizontal}, {id: '/site/homepage', label: 'Homepage sections', icon: House}]}] : []),
-    ...(can('legacy.edit') ? [{group: 'Site content', items: [{id: '/legacy/events', label: 'Events', icon: CalendarDays}, {id: '/legacy/people', label: 'People', icon: Users}, {id: '/legacy/engage', label: 'Engage pages', icon: Megaphone}]}] : []),
-    ...(can('submissions.read') || can('legacy.edit') ? [{group: 'Engagement', items: [...(can('submissions.read') ? [{id: '/submissions', label: 'Submissions', icon: Inbox}] : []), ...(can('legacy.edit') ? [{id: '/legacy/forms', label: 'Form definitions', icon: ClipboardList}] : [])]}] : []),
+    ...(can('legacy.edit') ? [{group: 'Site content', items: [{id: '/legacy/people', label: 'People', icon: Users}, {id: '/legacy/engage', label: 'Engage pages', icon: Megaphone}]}] : []),
+    ...(can('submissions.read') || can('content.read') ? [{group: 'Engagement', items: [
+      ...(can('submissions.read') ? [{id: '/submissions', label: 'Submissions', icon: Inbox}] : []),
+      ...(can('content.read') ? [{id: '/forms', label: 'Form definitions', icon: ClipboardList}] : []),
+    ]}] : []),
     {group: 'Administration', items: [
-      ...(can('users.read') ? [{id: '/users', label: 'Users', icon: UsersRound}] : []), ...(can('activity.read') ? [{id: '/activity', label: 'Activity', icon: Activity}] : []),
-      ...(can('health.read') ? [{id: '/health', label: 'System health', icon: HeartPulse}] : []), ...(can('settings.read') ? [{id: '/settings', label: 'Settings', icon: Settings}] : []),
+      ...(can('users.read') ? [{id: '/users', label: 'Users', icon: UsersRound}] : []),
+      ...(can('activity.read') ? [{id: '/activity', label: 'Activity', icon: Activity}] : []),
+      ...(can('health.read') ? [{id: '/health', label: 'System health', icon: HeartPulse}] : []),
+      ...(can('settings.read') ? [{id: '/settings', label: 'Settings', icon: Settings}] : []),
       {id: '/account', label: 'Your account', icon: UserRound},
     ]},
   ];
   return groups.filter(group => group.items.length);
 }
+
 // Planned modules: discoverable, but kept out of the way so they do not clutter the working navigation.
-export const soon = [{label: 'Partners', icon: Handshake}, {label: 'Policy briefs', icon: BookOpen}, {label: 'Opportunities', icon: Briefcase}, {label: 'Navigation menus', icon: Route}, {label: 'Redirects', icon: Route}, {label: 'AI writing assistant', icon: Sparkles}];
+export const soon = [{label: 'Partners', icon: Handshake}, {label: 'Policy briefs', icon: BookOpen}, {label: 'Opportunities', icon: Briefcase}, {label: 'Navigation menus', icon: Route}, {label: 'Redirects', icon: Route}];
 
 export function breadcrumbs(user, hash) {
   const groups = navigation(user);
@@ -78,10 +87,23 @@ function GlobalSearch() {
     const text = query.trim();
     if (text.length < 2) { setResults(null); return undefined; }
     let live = true;
-    const timer = setTimeout(() => api(`/api/staff/content?q=${encodeURIComponent(text)}&pageSize=6&sort=updated`).then(data => { if (live) { setResults(data.items); setSelected(0); } }).catch(() => live && setResults([])), 220);
+    const timer = setTimeout(() => Promise.all([
+      api(`/api/staff/content?q=${encodeURIComponent(text)}&pageSize=5&sort=updated`).catch(() => ({items: []})),
+      api(`/api/staff/events?q=${encodeURIComponent(text)}&pageSize=4&sort=updated`).catch(() => ({items: []})),
+    ]).then(([contentData, eventData]) => {
+      if (live) {
+        setResults([...(contentData.items ?? []), ...(eventData.items ?? [])]);
+        setSelected(0);
+      }
+    }), 220);
     return () => { live = false; clearTimeout(timer); };
   }, [query]);
-  const go = item => { window.location.hash = `#/content/${item.type}/${item.id}`; setOpen(false); setQuery(''); input.current?.blur(); };
+  const go = item => {
+    window.location.hash = item.type === 'event' ? `#/events/${item.id}` : `#/content/${item.type}/${item.id}`;
+    setOpen(false);
+    setQuery('');
+    input.current?.blur();
+  };
   const onKey = event => {
     if (event.key === 'Escape') { setOpen(false); input.current?.blur(); }
     else if (event.key === 'ArrowDown' && results?.length) { event.preventDefault(); setSelected(value => (value + 1) % results.length); }
@@ -90,9 +112,9 @@ function GlobalSearch() {
   };
   return <div className="fa-gsearch" ref={box}>
     <label className="fa-search"><Search aria-hidden="true"/><span className="fa-sr">Search content</span>
-      <input ref={input} type="search" role="combobox" aria-expanded={open && results != null} aria-controls="fa-search-results" value={query} placeholder="Search articles, commentaries and pages…" onFocus={() => setOpen(true)} onChange={event => { setQuery(event.target.value); setOpen(true); }} onKeyDown={onKey}/><span className="fa-kbd" aria-hidden="true">/</span></label>
+      <input ref={input} type="search" role="combobox" aria-expanded={open && results != null} aria-controls="fa-search-results" value={query} placeholder="Search articles, commentaries, events and pages…" onFocus={() => setOpen(true)} onChange={event => { setQuery(event.target.value); setOpen(true); }} onKeyDown={onKey}/><span className="fa-kbd" aria-hidden="true">/</span></label>
     {open && results != null && <div className="fa-results" id="fa-search-results" role="listbox">
-      {results.length ? results.map((item, index) => <a key={item.id} role="option" aria-selected={index === selected} className="fa-result" href={`#/content/${item.type}/${item.id}`} onClick={event => { event.preventDefault(); go(item); }}>
+      {results.length ? results.map((item, index) => <a key={`${item.type}-${item.id}`} role="option" aria-selected={index === selected} className="fa-result" href={item.type === 'event' ? `#/events/${item.id}` : `#/content/${item.type}/${item.id}`} onClick={event => { event.preventDefault(); go(item); }}>
         <div className="fa-result-text"><strong>{item.title}</strong><small>{typeLabel[item.type] ?? item.type}{item.category ? ` · ${item.category}` : ''}</small></div><StatusChip status={item.status}/></a>)
         : <div className="fa-result"><div className="fa-result-text"><strong>No results for “{query.trim()}”</strong><small>Try a different word or check the spelling.</small></div></div>}</div>}
   </div>;
@@ -102,7 +124,10 @@ function NewMenu({user}) {
   if (!allows(user.roles, 'content.create')) return null;
   return <Menu label="Create" trigger={({toggle, props}) => <Button variant="primary" icon={Plus} onClick={toggle} {...props}><span className="fa-new-label">New</span></Button>}>
     <MenuHeading>Create</MenuHeading>
-    <MenuItem icon={Newspaper} href="#/content/news/new">News article</MenuItem><MenuItem icon={PenLine} href="#/content/commentary/new">Commentary</MenuItem><MenuItem icon={FileText} href="#/content/page/new">Page</MenuItem>
+    <MenuItem icon={Newspaper} href="#/content/news/new">News article</MenuItem>
+    <MenuItem icon={PenLine} href="#/content/commentary/new">Commentary</MenuItem>
+    <MenuItem icon={CalendarDays} href="#/events/new">Event</MenuItem>
+    <MenuItem icon={FileText} href="#/content/page/new">Page</MenuItem>
     <MenuSeparator/><MenuItem icon={ImageIcon} href="#/media">Upload media</MenuItem>
   </Menu>;
 }

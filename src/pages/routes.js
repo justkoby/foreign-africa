@@ -13,6 +13,9 @@ export function resolvePage(pathname){
  const path='/'+pathname.split('/').filter(Boolean).join('/')+'/';
  if(typeof window!=='undefined'&&window.__FA_PREVIEW_DATA__?.item){
   const item=window.__FA_PREVIEW_DATA__.item;
+  if(path.startsWith('/api/staff/events/')&&path.includes('/preview/')){
+   return {type:'event',id:item.slug||String(item.id),preview:true};
+  }
   if(path.startsWith('/api/staff/content/')&&path.includes('/preview/')){
    return {type:item.type==='commentary'?'commentary':'news-article',slug:item.slug,id:item.id,preview:true};
   }
@@ -30,6 +33,7 @@ export function resolvePage(pathname){
  const blogArticle=path.match(/^\/blog\/([a-z0-9-]+)\/$/);if(blogArticle)return {type:'commentary',slug:blogArticle[1]};
  if(path==='/events/')return {type:'events'};
  const event=events.find(item=>path===`/events/${item.id}/`);if(event)return {type:'event',id:event.id};
+ const eventMatch=path.match(/^\/events\/([a-z0-9-]+)\/$/);if(eventMatch)return {type:'event',id:eventMatch[1]};
  if(path==='/opportunities/')return {type:'opportunities'};
  const pathway=opportunityPathways.find(item=>item.path===path||(item.id==='enterprise-week'&&path==='/foreign-africa-enterprise-week-few/'));
  if(pathway)return {type:'opportunity',id:pathway.id};

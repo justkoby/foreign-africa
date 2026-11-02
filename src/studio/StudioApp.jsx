@@ -2,7 +2,10 @@ import React, {useEffect, useState} from 'react';
 import {allows} from '../../server/permissions.js';
 import {api} from './api.js';
 import ContentEditor from './editor/ContentEditor.jsx';
+import EventEditor from './editor/EventEditor.jsx';
 import ContentList from './ContentList.jsx';
+import EventsList from './EventsList.jsx';
+import FormsManager from './FormsManager.jsx';
 import Dashboard from './Dashboard.jsx';
 import Login from './Login.jsx';
 import MediaLibrary from './MediaLibrary.jsx';
@@ -44,6 +47,11 @@ export default function StudioApp() {
   let screen = <Dashboard user={session.user}/>;
   if (area === 'content' && type && id) screen = <ContentEditor type={type} id={id} user={session.user}/>;
   else if (area === 'content' && type) screen = <ContentList key={type} type={type} user={session.user}/>;
+  else if (area === 'events' && type) screen = allows(session.user.roles, 'content.read') ? <EventEditor id={type} user={session.user}/> : denied('edit events');
+  else if (area === 'events') screen = allows(session.user.roles, 'content.read') ? <EventsList user={session.user}/> : denied('view events');
+  else if (area === 'forms') screen = allows(session.user.roles, 'content.read') ? <FormsManager user={session.user}/> : denied('manage forms');
+  else if (area === 'legacy' && type === 'events') screen = allows(session.user.roles, 'content.read') ? (id ? <EventEditor id={id} user={session.user}/> : <EventsList user={session.user}/>) : denied('view events');
+  else if (area === 'legacy' && type === 'forms') screen = allows(session.user.roles, 'content.read') ? <FormsManager user={session.user}/> : denied('manage forms');
   else if (area === 'submissions') screen = allows(session.user.roles, 'submissions.read') ? <Submissions user={session.user} api={api} id={type}/> : <p className="studio-alert" role="alert">You do not have permission to view submissions.</p>;
   else if (area === 'legacy') screen = allows(session.user.roles, 'legacy.edit') ? <Legacy section={type} id={id} editable={Boolean(session.legacyFileEditing)}/> : <p className="studio-alert" role="alert">You do not have permission to edit these collections.</p>;
   else if (area === 'site') screen = allows(session.user.roles, 'homepage.edit') && ['hero', 'homepage'].includes(type) ? <SiteEditor key={type} area={type} user={session.user}/> : <p className="studio-alert" role="alert">You do not have permission to edit the homepage.</p>;
@@ -54,6 +62,8 @@ export default function StudioApp() {
   else if (area === 'health') screen = allows(session.user.roles, 'health.read') ? <Health/> : denied('view system health');
   else if (area === 'settings') screen = allows(session.user.roles, 'settings.read') ? <Settings/> : denied('view settings');
   else if (area === 'account') screen = <Account user={session.user}/>;
-  const modern = ['content', 'media', 'users', 'activity', 'health', 'settings', 'account'].includes(area) || !area;
+  const modern = ['content', 'events', 'forms', 'media', 'users', 'activity', 'health', 'settings', 'account'].includes(area)
+    || (area === 'legacy' && (type === 'events' || type === 'forms'))
+    || !area;
   return <FeedbackProvider><AppShell user={session.user} hash={hash} onLogout={async () => {await api('/api/staff/logout', {method: 'POST', body: {}}); setSession({user: null, configured: true});}}>{modern ? screen : <div className="fa-page fa-legacy">{screen}</div>}</AppShell></FeedbackProvider>;
 }

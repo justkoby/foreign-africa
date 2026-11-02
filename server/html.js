@@ -5,6 +5,7 @@ const paths = {
   commentary: item => `/${item.slug}/`,
   page: item => `/${item.slug}/`,
   programme: item => `/${item.slug}/`,
+  event: item => `/events/${item.slug}/`,
 };
 
 function value(item, ...keys) {
@@ -39,7 +40,18 @@ export function articleMeta(config, item) {
   const canonical = config.publicSiteUrl + publicPath({...item, content_type: type, slug: item.slug});
   const imageUrl = image ? (String(image).startsWith('http') ? image : config.publicSiteUrl + image) : '';
   const index = config.appEnv === 'production' ? 'index,follow' : 'noindex,nofollow';
-  const jsonLd = JSON.stringify({
+  const jsonLd = JSON.stringify(type === 'event' ? {
+    '@context': 'https://schema.org',
+    '@type': 'Event',
+    name: item.title,
+    startDate: value(item, 'starts_at', 'startsAt', 'event_date', 'eventDate') || undefined,
+    endDate: value(item, 'ends_at', 'endsAt') || undefined,
+    eventStatus: item.cancelled ? 'https://schema.org/EventCancelled' : 'https://schema.org/EventScheduled',
+    location: item.venue ? {'@type': 'Place', name: item.venue} : undefined,
+    description,
+    image: imageUrl || undefined,
+    url: canonical,
+  } : {
     '@context': 'https://schema.org',
     '@type': type === 'news' ? 'NewsArticle' : 'Article',
     headline: item.title,
@@ -140,7 +152,7 @@ ${previewScript}`;
       <span class="fa-preview-hint">· Staff only · Unpublished draft changes are visible here</span>
     </div>
     <div class="fa-preview-bar-right">
-      <a href="/admin#/content/${escapeHtml(type)}/${item.id}" class="fa-preview-btn fa-preview-btn--edit">← Back to Editor</a>
+      <a href="${type === 'event' ? `/admin#/events/${item.dbId || item.id}` : `/admin#/content/${escapeHtml(type)}/${item.id}`}" class="fa-preview-btn fa-preview-btn--edit">← Back to Editor</a>
       ${status === 'published' ? `<a href="${publicPath({...item, content_type: type})}" class="fa-preview-btn fa-preview-btn--live" target="_blank" rel="noreferrer">View Live ↗</a>` : ''}
     </div>
   </div>
@@ -162,6 +174,8 @@ export function articleRequest(pathname) {
   if (path.startsWith('/admin/') || path.startsWith('/editor/') || path.startsWith('/api/')) return null;
   const news = path.match(/^\/news\/([a-z0-9-]+)\/$/);
   if (news) return {type: 'news', slug: news[1]};
+  const event = path.match(/^\/events\/([a-z0-9-]+)\/$/);
+  if (event) return {type: 'event', slug: event[1]};
   const blog = path.match(/^\/blog\/([a-z0-9-]+)\/$/);
   if (blog) return {type: 'commentary', slug: blog[1]};
   const root = path.match(/^\/([a-z0-9-]+)\/$/);

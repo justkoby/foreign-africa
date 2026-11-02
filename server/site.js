@@ -3,6 +3,7 @@ import {join} from 'node:path';
 import express from 'express';
 import {createApp} from './app.js';
 import {publicItem} from './content-store.js';
+import {getEventBySlug} from './events-store.js';
 import {articleRequest, externalRedirect, injectArticle} from './html.js';
 import {injectSiteData} from './site-inject.js';
 import {publishedSite} from './site-store.js';
@@ -19,7 +20,11 @@ export async function decorateHtml({pool, config, pathname, html, clock = () => 
   const request = articleRequest(pathname);
   if (!request || !pool || !html) return null;
   let item = null;
-  try { item = await publicItem(pool, request.type, request.slug, clock); } catch { return null; }
+  try {
+    item = request.type === 'event'
+      ? await getEventBySlug(pool, request.slug, {includeDrafts: false, clock})
+      : await publicItem(pool, request.type, request.slug, clock);
+  } catch { return null; }
   if (!item) return null;
   const redirect = externalRedirect(item);
   if (redirect) return {redirect};

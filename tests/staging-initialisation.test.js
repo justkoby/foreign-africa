@@ -105,14 +105,14 @@ test('the staging initialisation procedure, end to end on a replica of the Hosti
     ready = await boot({PREPARE_DATABASE: '1', PREPARE_DATABASE_CONFIRM: CMS_DB, BOOTSTRAP_ADMIN_EMAIL: 'ada@foreignafrica.org', BOOTSTRAP_ADMIN_PASSWORD: ADMIN_PASSWORD, BOOTSTRAP_ADMIN_NAME: 'Ada Admin'});
     t.after(() => ready.stop());
     const log = ready.log();
-    assert.match(log, /Applied 001_identity.*007_site_content/);
+    assert.match(log, /Applied 001_identity.*008_events_cms/);
     assert.match(log, /Super administrator created for ada@foreignafrica\.org/);
     assert.match(log, /Seed finished\. Inserted 17/);
     assert.match(log, /Foreign Africa is ready/);
     assert.match(log, /\[warn\] First administrator: BOOTSTRAP_ADMIN_PASSWORD is still set/);
     noSecrets(log);
     const [applied] = await root.query(`SELECT id FROM \`${CMS_DB}\`.schema_migrations ORDER BY id`);
-    assert.deepEqual(applied.map(row => row.id), ['001_identity', '002_content', '003_listings', '004_editorial', '005_submissions', '006_media_metadata', '007_site_content']);
+    assert.deepEqual(applied.map(row => row.id), ['001_identity', '002_content', '003_listings', '004_editorial', '005_submissions', '006_media_metadata', '007_site_content', '008_events_cms']);
     const health = JSON.parse((await ready.get('/api/health')).text);
     assert.deepEqual(health, {ok: true, phase: 'running', database: 'ok'});
   });

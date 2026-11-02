@@ -1,7 +1,7 @@
 import {sqlTime} from './text.js';
 import {assertCmsDatabase} from './database-guard.js';
 
-const insertOrder = ['users', 'user_roles', 'media_assets', 'terms', 'content_items', 'content_revisions', 'content_terms', 'forms', 'submissions', 'submission_notes', 'activity_logs'];
+const insertOrder = ['users', 'user_roles', 'media_assets', 'terms', 'content_items', 'content_revisions', 'content_terms', 'events', 'event_revisions', 'event_terms', 'forms', 'submissions', 'submission_notes', 'activity_logs'];
 const deleteOrder = [...insertOrder].reverse();
 
 function cell(value) {

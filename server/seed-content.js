@@ -5,6 +5,7 @@ import commentaries from '../data/cms/commentaries.json' with {type: 'json'};
 import news from '../data/cms/news.json' with {type: 'json'};
 import {activities} from '../src/activities.js';
 import {importContent} from './content-store.js';
+import {seedEventsAndForms} from './events-store.js';
 import {editorialDocument, plainDocument} from './document.js';
 import {registerSiteFile} from './media.js';
 import {createPool} from './db.js';
@@ -72,6 +73,8 @@ export async function seedCatalogue({pool, clock, actor, directory = root}) {
     }});
     report[result.status === 'inserted' ? 'inserted' : 'existing'].push({type: 'news', id: item.id, slug: slugFrom(item.sourceUrl), complete});
   }
+  const extra = await seedEventsAndForms({pool, directory, actor: {...actor, roles: actor?.roles ?? ['super_admin']}, clock});
+  Object.assign(report, extra);
   return report;
 }
 
