@@ -150,7 +150,7 @@ function Editing({type, initial, user}) {
       </div>
     </header>
     {error && <div className="ed-alert"><Notice tone="danger">{error}</Notice></div>}
-    <div className={`ed-layout${panelOpen ? '' : ' is-wide'}${tab === 'gemini' && geminiExpanded ? ' is-gemini-expanded' : ''}`}>
+    <div className={`ed-layout${panelOpen ? '' : ' is-wide'}${tab === 'gemini' && panelOpen ? ' is-gemini-active' : ''}${tab === 'gemini' && panelOpen && geminiExpanded ? ' is-gemini-expanded' : ''}`}>
       <div className="ed-main">
         <label className="fa-sr" htmlFor="ed-title">Title</label>
         <textarea id="ed-title" className="ed-title" rows={1} value={item.title} placeholder="Add title" onChange={event => {touch({title: event.target.value}); event.target.style.height = 'auto'; event.target.style.height = `${event.target.scrollHeight}px`;}}/>
@@ -159,7 +159,7 @@ function Editing({type, initial, user}) {
         <div className="ed-canvas"><EditorContent editor={editor}/></div>
         <p className="ed-foot">{facts.words.toLocaleString('en-GB')} words · about {Math.max(1, Math.ceil(facts.words / 220))} min read{facts.tables ? ` · ${facts.tables} table${facts.tables === 1 ? '' : 's'}` : ''}{facts.videos ? ` · ${facts.videos} video${facts.videos === 1 ? '' : 's'}` : ''}</p>
       </div>
-      <aside className={`ed-side${tab === 'gemini' && geminiExpanded ? ' is-expanded' : ''}`} aria-label="Document settings" hidden={!panelOpen}>
+      <aside className={`ed-side${tab === 'gemini' ? ' is-gemini-tab' : ''}${tab === 'gemini' && geminiExpanded ? ' is-expanded' : ''}`} aria-label="Document settings" hidden={!panelOpen}>
         <Tabs label="Settings" value={tab} onChange={setTab} tabs={[{id: 'document', label: 'Document', icon: SlidersHorizontal}, {id: 'seo', label: 'SEO', icon: Search}, ...(item.id ? [{id: 'history', label: 'History', icon: History, count: revisions.length || undefined}] : []), {id: 'gemini', label: 'Gemini', icon: Sparkles}]}/>
         {tab === 'document' && <>
         <Panel title="Publish">
@@ -202,7 +202,7 @@ function Editing({type, initial, user}) {
           {revisions.length ? <ul className="ed-revisions">{revisions.map(revision => <li key={revision.id}><button type="button" className="ed-linkish" onClick={() => setCompare(compare?.id === revision.id ? null : revision)}>{time(revision.createdAt)}</button> <small>{revision.editorName}</small></li>)}</ul> : <p className="studio-hint">No revisions yet.</p>}
           {compare && <div className="ed-compare"><h3>{compare.title}</h3><p>{compare.text || 'No text.'}</p>{manager && <button type="button" onClick={async () => {if (dirty && !await confirm({title: 'Restore this version?', message: 'Restoring replaces your unsaved edits.', confirm: 'Restore'})) return; try {const restored = await api(`/api/staff/content/${item.id}/restore`, {method: 'POST', body: {revisionId: compare.id}}); editor.commands.setContent(restored.item.document); setItem({...restored.item, publishedOn: dateInput(restored.item.publishedAt)}); setEdits(0); setCompare(null); setState('Revision restored as a draft.'); loadRevisions(item.id);} catch (reason) {setError(reason.message);}}}>Restore this version</button>}</div>}
         </Panel>}
-        {tab === 'gemini' && (
+        <div className="ed-gemini-host" hidden={tab !== 'gemini'}>
           <GeminiAssistant
             editor={editor}
             item={{...item, type}}
@@ -212,7 +212,7 @@ function Editing({type, initial, user}) {
             isExpanded={geminiExpanded}
             onToggleExpand={() => setGeminiExpanded(v => !v)}
           />
-        )}
+        </div>
       </aside>
     </div>
     {picker && <MediaPicker accept={picker === 'pdf' ? 'pdf' : 'image'} user={user} onClose={() => setPicker('')} onSelect={file => {

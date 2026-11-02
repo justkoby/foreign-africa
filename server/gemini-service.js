@@ -1,6 +1,8 @@
 // Server-side Gemini AI editorial assistant service for Foreign Africa CMS.
 // Credentials and API key are never exposed to the client.
 
+import {classifyResponseKind} from '../src/studio/editor/gemini-format.js';
+
 const SYSTEM_INSTRUCTIONS = `You are the Foreign Africa Editorial Assistant, an expert writing and editorial partner for Foreign Africa (foreignafrica.org).
 Foreign Africa is a premier African-led institutional publication and platform connecting enterprise, policy, diplomacy, and economic opportunity across Africa.
 
@@ -9,24 +11,24 @@ EDITORIAL GUIDELINES:
 - Language: International/British English spelling (e.g. programmes, organisation, labour, centre, dialogue, prioritise).
 - Rigour: Ensure all assertions are supported by reason and evidence. Avoid empty buzzwords, hyperbole, or vague generalisations.
 - Integrity: Never invent citations, dates, statistics, quotes, or historical facts. If facts or claims are uncertain or unverified, explicitly flag them for human editorial verification.
-- Formatting: Return clean text or clean HTML tags (<p>, <strong>, <em>, <ul>, <li>, <blockquote>) suitable for article insertion when generating body content. For metadata (headlines, tags, excerpt), return clean plain text without surrounding quotes.`;
+- Formatting: Write in clean, natural Markdown (use ## or ### for section headings, **bold** for emphasis, *italics* for nuance, - or 1. for lists, and > for blockquotes). NEVER output raw HTML tags such as <p>, <h3>, <strong>, <ul>, or <li>, and NEVER wrap your response in markdown code fences (\`\`\`html or \`\`\`markdown).`;
 
 const ACTION_PROMPTS = {
-  improve: 'Improve the selected text for clarity, flow, precision, and impact while preserving the core facts, meaning, and voice.',
-  shorten: 'Condense the selected text into a tighter, punchier version without losing essential information.',
-  expand: 'Expand the selected text with deeper context, analytical nuance, and relevant illustrative detail, maintaining institutional rigor.',
-  tone_institutional: 'Rewrite the selected text in a polished, diplomatic institutional tone suitable for policy briefs and high-level publications.',
-  simplify: 'Simplify any dense jargon or overly complex phrasing in the selected text so it is clear and engaging for a broad readership.',
-  rewrite: 'Provide a compelling alternative phrasing or fresh angle for the selected text.',
-  headlines: 'Suggest 5 distinct, strong article headlines based on the content and topic. Provide a mix of direct, analytical, and visionary styles. Return each headline on a new line, numbered 1 to 5.',
-  excerpt: 'Write a compelling, concise 2-sentence summary (under 250 characters) suitable for article cards, email newsletters, and RSS feeds.',
-  seo: 'Provide an SEO title (under 60 characters) and a meta description (under 160 characters) optimised for search engine visibility and click-through rate.',
-  tags: 'Suggest 5 to 8 relevant topical tags and the best fitting category for this article. Format as a comma-separated list.',
-  social: 'Generate an engaging LinkedIn post (with 2-3 key takeaways and a thought-provoking opening) and a tweet thread starter based on this article.',
-  grammar: 'Review the text for grammatical precision, punctuation, British English spelling consistency, passive voice overuse, and readability. List specific suggestions clearly.',
-  factcheck: 'Analyze this article to identify any specific claims, dates, statistics, or institutional assertions that require human source verification. Clearly flag each point.',
-  draft: 'Using the provided title and context, write a well-structured first draft of an article with an introduction, analytical sections with subheadings, and a forward-looking conclusion.',
-  custom: 'Address the user\'s specific editorial request for this article.',
+  improve: 'Improve the selected text for clarity, flow, precision, and impact while preserving the core facts, meaning, and voice. Return ONLY the improved passage in clean Markdown without introductory commentary.',
+  shorten: 'Condense the selected text into a tighter, punchier version without losing essential information. Return ONLY the condensed passage in clean Markdown.',
+  expand: 'Expand the selected text with deeper context, analytical nuance, and relevant illustrative detail, maintaining institutional rigour. Return ONLY the expanded passage in clean Markdown.',
+  tone_institutional: 'Rewrite the selected text in a polished, diplomatic institutional tone suitable for policy briefs and high-level publications. Return ONLY the rewritten passage in clean Markdown.',
+  simplify: 'Simplify any dense jargon or overly complex phrasing in the selected text so it is clear and engaging for a broad readership. Return ONLY the simplified passage in clean Markdown.',
+  rewrite: 'Provide a compelling alternative phrasing or fresh angle for the selected text. Return ONLY the rewritten passage in clean Markdown.',
+  headlines: 'Suggest 5 distinct, strong article headlines based on the content and topic. Provide a mix of direct, analytical, and visionary styles. Return each headline on a new line, numbered 1 to 5, without surrounding quotes.',
+  excerpt: 'Write a compelling, concise 2-sentence summary (under 250 characters) suitable for article cards, email newsletters, and RSS feeds. Return ONLY the excerpt text without quotes or labels.',
+  seo: 'Provide an optimised SEO title (under 60 characters) and a meta description (under 160 characters) on two lines formatted as:\nSEO Title: <title>\nMeta Description: <description>',
+  tags: 'Suggest the best fitting category and 5 to 8 relevant topical tags for this article, formatted as:\nCategory: <category>\nTags: <tag1>, <tag2>, <tag3>, ...',
+  social: 'Generate an engaging LinkedIn post (with 2-3 key takeaways and a thought-provoking opening) and a short X/Twitter post based on this article, separated by a heading.',
+  grammar: 'Review the text for grammatical precision, punctuation, British English spelling consistency, passive voice overuse, and readability. Present your review using clear headings and bullet points.',
+  factcheck: 'Analyse this article to identify any specific claims, dates, statistics, or institutional assertions that require human source verification. Present each flagged point as a clear bullet item with why it should be verified.',
+  draft: 'Using the provided title and context, write a well-structured article draft in clean Markdown with an engaging introduction, analytical sections using ### subheadings, and a forward-looking conclusion. Return ONLY the article draft.',
+  custom: 'Address the user\'s specific editorial request for this article using clean Markdown formatting.',
 };
 
 export async function assistEditorial({
@@ -106,11 +108,17 @@ export async function assistEditorial({
     }
 
     const data = await response.json();
-    const resultText = data.candidates?.[0]?.content?.parts
+    let resultText = data.candidates?.[0]?.content?.parts
       ?.filter(p => !p.thought)
       ?.map(p => p.text || '')
       ?.join('')
       ?.trim() || '';
+
+    // Strip outer code fences if the model wrapped the output
+    const fenceMatch = resultText.match(/^```(?:html|markdown|md|text)?\s*\n([\s\S]*?)\n```$/i);
+    if (fenceMatch) {
+      resultText = fenceMatch[1].trim();
+    }
 
     if (!resultText) {
       return {
@@ -124,6 +132,7 @@ export async function assistEditorial({
       ok: true,
       result: resultText,
       action,
+      responseKind: classifyResponseKind(action, prompt),
       usage: data.usageMetadata || null,
     };
   } catch (error) {
