@@ -158,6 +158,7 @@ export default function GeminiAssistant({
   const [copiedId, setCopiedId] = useState(null);
   const [appliedBadge, setAppliedBadge] = useState(null);
   const [sourceViewId, setSourceViewId] = useState(null);
+  const [hiddenCompareIds, setHiddenCompareIds] = useState({});
   const [selectionState, setSelectionState] = useState({from: 0, to: 0, text: ''});
 
   const chatEndRef = useRef(null);
@@ -223,6 +224,7 @@ export default function GeminiAssistant({
         promptText,
         userLabel: promptText || ACTION_LABELS[action] || action,
         selectionRange: selectedText ? {...activeSelection} : null,
+        originalText: selectedText || '',
         selectedSnippet: selectedText ? selectedText.slice(0, 160) : null,
         time: timestamp,
         status: 'loading',
@@ -560,6 +562,15 @@ export default function GeminiAssistant({
               const isTurnLoading = turn.status === 'loading' || regeneratingId === turn.id;
               const canReplace = Boolean(selectedText || turn.selectionRange);
               const showSource = sourceViewId === turn.id;
+              const isRewriteSuggestion =
+                turn.responseKind === 'article_content' && Boolean(turn.originalText);
+              const showCompare = isRewriteSuggestion && !hiddenCompareIds[turn.id];
+              const originalWordCount = turn.originalText
+                ? turn.originalText.split(/\s+/).filter(Boolean).length
+                : 0;
+              const proposedWordCount = turn.plainText
+                ? turn.plainText.split(/\s+/).filter(Boolean).length
+                : 0;
 
               return (
                 <article key={turn.id} className="ed-gemini-turn">
@@ -570,7 +581,7 @@ export default function GeminiAssistant({
                         <span className="ed-gemini-user-label">{turn.userLabel}</span>
                         <time className="ed-gemini-time">{turn.time}</time>
                       </div>
-                      {turn.selectedSnippet && (
+                      {turn.selectedSnippet && !isRewriteSuggestion && (
                         <blockquote className="ed-gemini-quote">
                           “{turn.selectedSnippet}{turn.selectedSnippet.length >= 160 ? '…' : ''}”
                         </blockquote>
@@ -584,7 +595,7 @@ export default function GeminiAssistant({
                       <div className="ed-gemini-card-header">
                         <span className="ed-gemini-card-title">
                           <Loader2 size={14} className="fa-spin" />
-                          {regeneratingId === turn.id ? 'Regenerating suggestion…' : 'Gemini is preparing a response…'}
+                          {regeneratingId === turn.id ? 'Regenerating suggestion…' : 'Gemini is preparing a suggestion…'}
                         </span>
                       </div>
                       <div className="ed-gemini-shimmer-lines">
@@ -594,7 +605,11 @@ export default function GeminiAssistant({
                       </div>
                     </div>
                   ) : (
-                    <div className={`ed-gemini-card is-kind-${turn.responseKind}`}>
+                    <div
+                      className={`ed-gemini-card is-kind-${turn.responseKind} ${
+                        isRewriteSuggestion ? 'is-rewrite-card' : ''
+                      }`}
+                    >
                       {/* Card Header */}
                       <div className="ed-gemini-card-header">
                         <span className="ed-gemini-card-title">
@@ -606,12 +621,33 @@ export default function GeminiAssistant({
                             <MessageSquare size={14} />
                           )}
                           <span>
-                            {turn.responseKind === 'article_content'
-                              ? `Suggested passage · ${ACTION_LABELS[turn.action] || 'Draft'}`
-                              : ACTION_LABELS[turn.action] || 'Editorial response'}
+                            {isRewriteSuggestion
+                              ? 'Suggested rewrite'
+                              : turn.responseKind === 'article_content'
+                                ? `Suggested passage · ${ACTION_LABELS[turn.action] || 'Draft'}`
+                                : ACTION_LABELS[turn.action] || 'Editorial response'}
                           </span>
                         </span>
                         <div className="ed-gemini-card-meta">
+                          {turn.responseKind === 'article_content' && (
+                            <span className="ed-gemini-ai-badge">AI suggestion</span>
+                          )}
+                          {isRewriteSuggestion && (
+                            <button
+                              type="button"
+                              className={`ed-gemini-source-toggle ${showCompare ? 'is-active' : ''}`}
+                              title="Toggle original vs. proposed comparison"
+                              aria-pressed={showCompare}
+                              onClick={() =>
+                                setHiddenCompareIds(prev => ({
+                                  ...prev,
+                                  [turn.id]: !prev[turn.id],
+                                }))
+                              }
+                            >
+                              <span>Compare</span>
+                            </button>
+                          )}
                           {turn.responseKind === 'article_content' && (
                             <button
                               type="button"
@@ -636,7 +672,7 @@ export default function GeminiAssistant({
                         </div>
                       </div>
 
-                      {/* Card Body: Structured Metadata vs Formatted Content */}
+                      {/* Card Body: Structured Metadata vs Formatted Content & Rewrite Comparison */}
                       <div className="ed-gemini-card-content">
                         {showSource ? (
                           <pre className="ed-gemini-source-code">{turn.safeHtml}</pre>
@@ -733,6 +769,34 @@ export default function GeminiAssistant({
                               )}
                             </button>
                           </div>
+                        ) : turn.responseKind === 'article_content' ? (
+                          <div className="ed-gemini-comparison-wrap">
+                            {showCompare && turn.originalText && (
+                              <div className="ed-gemini-compare-original">
+                                <div className="ed-gemini-compare-label">
+                                  <span>Original paragraph</span>
+                                  <small>{originalWordCount} words</small>
+                                </div>
+                                <p className="ed-gemini-original-text">{turn.originalText}</p>
+                              </div>
+                            )}
+                            <div className="ed-gemini-compare-proposed">
+                              <div className="ed-gemini-compare-label is-proposed">
+                                <span>
+                                  {isRewriteSuggestion ? 'Proposed paragraph' : 'Proposed passage'}
+                                </span>
+                                <small>
+                                  {proposedWordCount} words
+                                  {isRewriteSuggestion && originalWordCount > 0
+                                    ? ` (${
+                                        proposedWordCount - originalWordCount > 0 ? '+' : ''
+                                      }${proposedWordCount - originalWordCount})`
+                                    : ''}
+                                </small>
+                              </div>
+                              <FormattedNodes nodes={turn.nodes} />
+                            </div>
+                          </div>
                         ) : (
                           <FormattedNodes nodes={turn.nodes} />
                         )}
@@ -759,21 +823,21 @@ export default function GeminiAssistant({
                         )}
                       </div>
 
-                      {/* Card Footer Actions: Insert, Replace, Copy, Regenerate, Discard */}
+                      {/* Card Footer Actions: Copy suggestion, Insert, Replace, Regenerate, Discard */}
                       <div className="ed-gemini-card-actions" role="group" aria-label="Suggestion actions">
                         <button
                           type="button"
-                          className="ed-gemini-btn is-primary"
-                          onClick={() => handleInsertNodes(turn.id, turn.nodes)}
-                          title="Insert formatted content into article at cursor"
+                          className="ed-gemini-btn is-copy-pill"
+                          onClick={() => handleCopy(turn.id, turn.plainText)}
+                          title="Copy suggestion to clipboard"
                         >
-                          {appliedBadge === `insert-${turn.id}` ? (
+                          {copiedId === turn.id ? (
                             <>
-                              <CheckCircle2 size={13} /> Inserted
+                              <Check size={13} className="is-success" /> Copied suggestion
                             </>
                           ) : (
                             <>
-                              <Plus size={13} /> Insert into article
+                              <Copy size={13} /> Copy suggestion
                             </>
                           )}
                         </button>
@@ -781,7 +845,7 @@ export default function GeminiAssistant({
                         {canReplace && (
                           <button
                             type="button"
-                            className="ed-gemini-btn is-secondary"
+                            className="ed-gemini-btn is-primary"
                             onClick={() => handleReplaceSelection(turn)}
                             title="Replace the selected passage in the editor"
                           >
@@ -791,7 +855,7 @@ export default function GeminiAssistant({
                               </>
                             ) : (
                               <>
-                                <Replace size={13} /> Replace selected text
+                                <Replace size={13} /> Replace
                               </>
                             )}
                           </button>
@@ -799,17 +863,17 @@ export default function GeminiAssistant({
 
                         <button
                           type="button"
-                          className="ed-gemini-btn"
-                          onClick={() => handleCopy(turn.id, turn.plainText)}
-                          title="Copy clean text to clipboard"
+                          className={`ed-gemini-btn ${canReplace ? 'is-secondary' : 'is-primary'}`}
+                          onClick={() => handleInsertNodes(turn.id, turn.nodes)}
+                          title="Insert formatted content into article at cursor"
                         >
-                          {copiedId === turn.id ? (
+                          {appliedBadge === `insert-${turn.id}` ? (
                             <>
-                              <Check size={13} className="is-success" /> Copied
+                              <CheckCircle2 size={13} /> Inserted
                             </>
                           ) : (
                             <>
-                              <Copy size={13} /> Copy
+                              <Plus size={13} /> Insert
                             </>
                           )}
                         </button>
@@ -826,7 +890,7 @@ export default function GeminiAssistant({
 
                         <button
                           type="button"
-                          className="ed-gemini-btn is-ghost-danger"
+                          className="ed-gemini-btn is-danger-subtle"
                           onClick={() => handleDiscard(turn.id)}
                           title="Discard this suggestion"
                         >
